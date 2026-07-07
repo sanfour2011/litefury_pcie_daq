@@ -1,0 +1,19 @@
+# Vivado generated/temporary files
+*.jou
+*.log
+*.str
+.Xil/
+*.cache/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.sim/
+*.gen/
+*.xpr.lock
+*.dcp
+
+# Behalte Projektdatei, Constraints, Sources, Testbenches
+!*.xpr
+!*.srcs/constrs_1/**
+!*.srcs/sources_1/new/**
+!*.srcs/sim_1/**
