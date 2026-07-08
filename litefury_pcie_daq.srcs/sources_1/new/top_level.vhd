@@ -54,6 +54,19 @@ ARCHITECTURE Behavioral OF top_level IS
         ); -- 1-bit input: Diff_n buffer input (connect directly to top-level port)
     END COMPONENT IBUFDS;
 
+    Component sample_gen IS
+        GENERIC (
+            SAMPLE_RATE_HZ : INTEGER := 100_000_000; -- Desired output clk frequency
+            CLK_FREQ_HZ : INTEGER := 200_000_000 -- Input CLK_FREQ_HZ
+        );
+        PORT (
+            rst_n : IN STD_LOGIC;
+            clk : IN STD_LOGIC;
+            sawtooth_out : OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
+            sample_valid : OUT STD_LOGIC
+        );
+    END COMPONENT sample_gen;
+
     COMPONENT tick_gen IS
         GENERIC (
             TICK_RATE_HZ : INTEGER := 1; -- Tick rate in Hz
