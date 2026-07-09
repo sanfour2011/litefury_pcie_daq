@@ -54,7 +54,7 @@ ARCHITECTURE Behavioral OF top_level IS
         ); -- 1-bit input: Diff_n buffer input (connect directly to top-level port)
     END COMPONENT IBUFDS;
 
-    Component sample_gen IS
+    COMPONENT sample_gen IS
         GENERIC (
             SAMPLE_RATE_HZ : INTEGER := 100_000_000; -- Desired output clk frequency
             CLK_FREQ_HZ : INTEGER := 200_000_000 -- Input CLK_FREQ_HZ
@@ -85,6 +85,13 @@ ARCHITECTURE Behavioral OF top_level IS
     SIGNAL enable_acquisition_sig : STD_LOGIC;
     SIGNAL is_running_sig : STD_LOGIC;
     SIGNAL buffer_full_sig : STD_LOGIC;
+
+    ATTRIBUTE ASYNC_REG : STRING; --könnte man auch im xdc setzen, aber hier ist es einfacher: set_property ASYNC_REG TRUE [get_cells {FF1_reg FF2_reg}]
+    SIGNAL FF1_reg : STD_LOGIC := '0';
+    SIGNAL enable_acquisition_synced  : STD_LOGIC := '0';
+    ATTRIBUTE ASYNC_REG OF FF1_reg : SIGNAL IS "TRUE";
+    ATTRIBUTE Async_Reg OF enable_acquisition_synced  : SIGNAL IS "TRUE";
+    
 
 BEGIN
 
@@ -133,11 +140,18 @@ BEGIN
 
     PROCESS (sys_clk, pcie_reset)
     BEGIN
+
         IF pcie_reset = '0' THEN
             count <= (OTHERS => '0'); -- Reset: Alle LEDs aus
             is_running_sig <= '0';
+            ff1_reg <= '0';
+            enable_acquisition_synced  <= '0';
+            
         ELSIF rising_edge(sys_clk) THEN
-            IF tick_1Hz = '1' AND enable_acquisition_sig = '1' AND buffer_full_sig = '0' THEN
+            FF1_reg <= enable_acquisition_sig;
+            enable_acquisition_synced  <= FF1_reg;
+
+            IF tick_1Hz = '1' AND enable_acquisition_synced = '1' AND buffer_full_sig = '0' THEN
                 count <= STD_LOGIC_VECTOR(unsigned(count) + 1);
                 is_running_sig <= '1';
                 buffer_full_sig <= NOT buffer_full_sig;
