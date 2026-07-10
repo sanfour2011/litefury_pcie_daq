@@ -79,6 +79,18 @@ ARCHITECTURE Behavioral OF top_level IS
         );
     END COMPONENT tick_gen;
 
+--    COMPONENT blk_mem_gen_0 IS
+--        PORT (
+--            clkb : IN STD_LOGIC;
+--            rstb : IN STD_LOGIC;
+--            web : IN STD_LOGIC;
+--            -- enb : in STD_LOGIC; --Optional, wenn nicht benötigt, kann entfernt werden oder auf '1' gesetzt werden
+--            addrb : IN STD_LOGIC_VECTOR (12 DOWNTO 0);
+--            dinb : IN STD_LOGIC_VECTOR (31 DOWNTO 0);
+--            doutb : OUT STD_LOGIC_VECTOR (31 DOWNTO 0)
+--        );
+--    END COMPONENT blk_mem_gen_0;
+
     SIGNAL sys_clk : STD_LOGIC;
     SIGNAL tick_1Hz : STD_LOGIC;
     SIGNAL count : STD_LOGIC_VECTOR(3 DOWNTO 0) := (OTHERS => '0'); -- 4-bit counter
@@ -88,10 +100,14 @@ ARCHITECTURE Behavioral OF top_level IS
 
     ATTRIBUTE ASYNC_REG : STRING; --könnte man auch im xdc setzen, aber hier ist es einfacher: set_property ASYNC_REG TRUE [get_cells {FF1_reg FF2_reg}]
     SIGNAL FF1_reg : STD_LOGIC := '0';
-    SIGNAL enable_acquisition_synced  : STD_LOGIC := '0';
+    SIGNAL enable_acquisition_synced : STD_LOGIC := '0'; -- Synchronisiertes Signal für enable_acquisition (Hint CDC)
     ATTRIBUTE ASYNC_REG OF FF1_reg : SIGNAL IS "TRUE";
-    ATTRIBUTE Async_Reg OF enable_acquisition_synced  : SIGNAL IS "TRUE";
-    
+    ATTRIBUTE Async_Reg OF enable_acquisition_synced : SIGNAL IS "TRUE";
+
+    SIGNAL bram_addr_counter : STD_LOGIC_VECTOR (12 DOWNTO 0) := (OTHERS => '0'); -- 13-bit counter for BRAM address 
+    SIGNAL sawtooth_out : STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => '0'); -- 32-bit sawtooth output
+    SIGNAL sawtooth_valid : STD_LOGIC := '0'; -- Signal to indicate when the sawtooth output is valid   
+    SIGNAL sample_valid : STD_LOGIC; -- Signal to indicate when the sample is valid
 
 BEGIN
 
@@ -111,6 +127,29 @@ BEGIN
         rst_n => pcie_reset,
         tick => tick_1Hz,
         sysclk => sys_clk
+    );
+
+    sawtooth_gen_inst : sample_gen
+    GENERIC MAP(
+        SAMPLE_RATE_HZ => 100_000_000, -- Desired output clk frequency
+        CLK_FREQ_HZ => 200_000_000 -- Input CLK_FREQ_HZ
+    )
+    PORT MAP(
+        rst_n => pcie_reset,
+        clk => sys_clk,
+        sawtooth_out => sawtooth_out,
+        sample_valid => sample_valid
+    );
+
+    bram_inst : blk_mem_gen_0
+    PORT MAP(
+        clkb => sys_clk,
+        rstb => NOT pcie_reset,
+        web => sample_valid,
+        -- enb => '1', -- optional 
+        addrb => bram_addr_counter,
+        dinb => sawtooth_out,
+        doutb => OPEN
     );
 
     --ToDo: Siehe PCIe Takt-Anforderung auf Low setzen, sollte nicht immer aktiv sein,
@@ -142,26 +181,37 @@ BEGIN
     BEGIN
 
         IF pcie_reset = '0' THEN
-            count <= (OTHERS => '0'); -- Reset: Alle LEDs aus
             is_running_sig <= '0';
             ff1_reg <= '0';
-            enable_acquisition_synced  <= '0';
-            
+            enable_acquisition_synced <= '0';
+
         ELSIF rising_edge(sys_clk) THEN
             FF1_reg <= enable_acquisition_sig;
-            enable_acquisition_synced  <= FF1_reg;
-
-            IF tick_1Hz = '1' AND enable_acquisition_synced = '1' AND buffer_full_sig = '0' THEN
-                count <= STD_LOGIC_VECTOR(unsigned(count) + 1);
+            enable_acquisition_synced <= FF1_reg;
+            IF enable_acquisition_synced = '1' AND buffer_full_sig = '0' THEN
                 is_running_sig <= '1';
-                buffer_full_sig <= NOT buffer_full_sig;
+                bram_addr_counter <= STD_LOGIC_VECTOR(unsigned(bram_addr_counter) + 1);
             ELSIF tick_1Hz = '1' THEN
-                count <= NOT count; -- Zähler bleibt unverändert, wenn is_running_sig = '0' oder buffer_full_sig = '1'
                 is_running_sig <= '0';
             END IF;
         END IF;
     END PROCESS;
-    -- buffer_full_sig <= '0'; -- Set buffer_full_sig to '0' to avoid warnings about unconnected signals
+
+    PROCESS (sys_clk, pcie_reset)
+    BEGIN
+        IF pcie_reset = '0' THEN
+            count <= (OTHERS => '0'); -- Reset: Alle LEDs an
+
+        ELSIF rising_edge(sys_clk) THEN
+            IF tick_1Hz = '1' AND enable_acquisition_synced = '1' THEN
+                count <= STD_LOGIC_VECTOR(unsigned(count) + 1);
+                buffer_full_sig <= NOT buffer_full_sig;
+            ELSIF tick_1Hz = '1' THEN
+                buffer_full_sig <= NOT buffer_full_sig;
+                count <= NOT count;
+            END IF;
+        END IF;
+    END PROCESS;
 
     ledn <= NOT count; -- LEDs zeigen den Zählerstand an
 END Behavioral;
