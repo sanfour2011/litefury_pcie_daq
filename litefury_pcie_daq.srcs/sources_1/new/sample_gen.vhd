@@ -31,7 +31,7 @@ USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY sample_gen IS
     GENERIC (
-        SAMPLE_RATE_HZ : INTEGER := 1; -- Desired output clk frequency
+        SAMPLE_RATE_HZ : INTEGER := 1; -- Rate at which new sawtooth samples are generated
         CLK_FREQ_HZ : INTEGER := 200_000_000-- Input CLK_FREQ_HZ
 
     );

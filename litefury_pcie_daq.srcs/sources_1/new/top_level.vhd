@@ -67,7 +67,7 @@ ARCHITECTURE Behavioral OF top_level IS
 
     COMPONENT sample_gen IS
         GENERIC (
-            SAMPLE_RATE_HZ : INTEGER := 100_000_000; -- Desired output clk frequency
+            SAMPLE_RATE_HZ : INTEGER := 1; -- Rate at which new sawtooth samples are generated
             CLK_FREQ_HZ : INTEGER := 200_000_000 -- Input CLK_FREQ_HZ
         );
         PORT (
@@ -131,7 +131,7 @@ BEGIN
 
     sawtooth_gen_inst : sample_gen
     GENERIC MAP(
-        SAMPLE_RATE_HZ => 100_000_000, -- Desired output clk frequency
+        SAMPLE_RATE_HZ => 1, -- Rate at which new sawtooth samples are generated
         CLK_FREQ_HZ => 200_000_000 -- Input CLK_FREQ_HZ
     )
     PORT MAP(
@@ -195,7 +195,7 @@ BEGIN
             IF enable_acquisition_synced = '1' AND buffer_full_sig = '0' THEN
                 is_running_sig <= '1';
                 bram_addr_counter <= STD_LOGIC_VECTOR(unsigned(bram_addr_counter) + 1);
-            ELSIF tick_1Hz = '1' THEN
+            ELSE 
                 is_running_sig <= '0';
             END IF;
         END IF;
@@ -210,10 +210,8 @@ BEGIN
             count <= (OTHERS => '0'); -- Reset: Alle LEDs an
         ELSIF rising_edge(sys_clk) THEN
             IF tick_1Hz = '1' AND enable_acquisition_synced = '1' THEN
-                count <= STD_LOGIC_VECTOR(unsigned(count) + 1);
-                buffer_full_sig <= NOT buffer_full_sig;
-            ELSIF tick_1Hz = '1' THEN
-                buffer_full_sig <= NOT buffer_full_sig;
+                count <= STD_LOGIC_VECTOR(unsigned(count) + 1);               
+            ELSIF tick_1Hz = '1' THEN              
                 count <= NOT count;
             END IF;
         END IF;

@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0x2EAF78267FF15D45",
+      "boundary_crc": "0x8DF967DD1067FAD0",
       "device": "xc7a100tfgg484-2",
       "gen_directory": "../../../../litefury_pcie_daq.gen/sources_1/bd/design_1",
       "name": "design_1",
@@ -90,6 +90,79 @@
             "right": "0"
           }
         }
+      },
+      "BRAM_PORTB_0": {
+        "mode": "Slave",
+        "vlnv_bus_definition": "xilinx.com:interface:bram:1.0",
+        "vlnv": "xilinx.com:interface:bram_rtl:1.0",
+        "parameters": {
+          "MASTER_TYPE": {
+            "value": "BRAM_CTRL"
+          },
+          "MEM_ECC": {
+            "value": "NONE",
+            "value_src": "default"
+          },
+          "MEM_SIZE": {
+            "value": "8192",
+            "value_src": "default"
+          },
+          "MEM_WIDTH": {
+            "value": "32",
+            "value_src": "default"
+          },
+          "READ_LATENCY": {
+            "value": "1",
+            "value_src": "default"
+          },
+          "READ_WRITE_MODE": {
+            "value": "READ_WRITE"
+          }
+        },
+        "hdl_attributes": {
+          "LOCKED": {
+            "value": "FALSE",
+            "value_src": "default"
+          }
+        },
+        "port_maps": {
+          "ADDR": {
+            "physical_name": "BRAM_PORTB_0_addr",
+            "direction": "I",
+            "left": "31",
+            "right": "0"
+          },
+          "CLK": {
+            "physical_name": "BRAM_PORTB_0_clk",
+            "direction": "I"
+          },
+          "DIN": {
+            "physical_name": "BRAM_PORTB_0_din",
+            "direction": "I",
+            "left": "31",
+            "right": "0"
+          },
+          "DOUT": {
+            "physical_name": "BRAM_PORTB_0_dout",
+            "direction": "O",
+            "left": "31",
+            "right": "0"
+          },
+          "EN": {
+            "physical_name": "BRAM_PORTB_0_en",
+            "direction": "I"
+          },
+          "RST": {
+            "physical_name": "BRAM_PORTB_0_rst",
+            "direction": "I"
+          },
+          "WE": {
+            "physical_name": "BRAM_PORTB_0_we",
+            "direction": "I",
+            "left": "3",
+            "right": "0"
+          }
+        }
       }
     },
     "ports": {
@@ -152,6 +225,12 @@
       },
       "buffer_full": {
         "direction": "I"
+      },
+      "rsta_busy_0": {
+        "direction": "O"
+      },
+      "rstb_busy_0": {
+        "direction": "O"
       }
     },
     "components": {
@@ -330,6 +409,11 @@
         "xci_path": "ip\\design_1_axi_bram_ctrl_0_1\\design_1_axi_bram_ctrl_0_1.xci",
         "inst_hier_path": "axi_bram_ctrl_0",
         "has_run_ip_tcl": "true",
+        "parameters": {
+          "SINGLE_PORT_BRAM": {
+            "value": "1"
+          }
+        },
         "interface_ports": {
           "S_AXI": {
             "bd_attributes": {
@@ -510,16 +594,16 @@
       }
     },
     "interface_nets": {
+      "BRAM_PORTB_0_1": {
+        "interface_ports": [
+          "BRAM_PORTB_0",
+          "blk_mem_gen_0/BRAM_PORTB"
+        ]
+      },
       "axi_bram_ctrl_0_BRAM_PORTA": {
         "interface_ports": [
           "blk_mem_gen_0/BRAM_PORTA",
           "axi_bram_ctrl_0/BRAM_PORTA"
-        ]
-      },
-      "axi_bram_ctrl_0_BRAM_PORTB": {
-        "interface_ports": [
-          "blk_mem_gen_0/BRAM_PORTB",
-          "axi_bram_ctrl_0/BRAM_PORTB"
         ]
       },
       "axi_smc_M00_AXI": {
@@ -578,6 +662,18 @@
           "ledn"
         ]
       },
+      "blk_mem_gen_0_rsta_busy": {
+        "ports": [
+          "blk_mem_gen_0/rsta_busy",
+          "rsta_busy_0"
+        ]
+      },
+      "blk_mem_gen_0_rstb_busy": {
+        "ports": [
+          "blk_mem_gen_0/rstb_busy",
+          "rstb_busy_0"
+        ]
+      },
       "buffer_full_0_1": {
         "ports": [
           "buffer_full",
@@ -629,13 +725,13 @@
             "segments": {
               "SEG_axi_bram_ctrl_0_Mem0": {
                 "address_block": "/axi_bram_ctrl_0/S_AXI/Mem0",
-                "offset": "0x00000000C0000000",
+                "offset": "0x0000000044A02000",
                 "range": "8K"
               },
               "SEG_axi_csr_0_CONTROL_STATUS_REG_reg": {
                 "address_block": "/axi_csr_0/CONTROL_STATUS_REG/CONTROL_STATUS_REG_reg",
                 "offset": "0x0000000044A00000",
-                "range": "64K",
+                "range": "128",
                 "offset_base_param": "C_CONTROL_STATUS_REG_BASEADDR",
                 "offset_high_param": "C_CONTROL_STATUS_REG_HIGHADDR"
               }
@@ -645,13 +741,13 @@
             "segments": {
               "SEG_axi_bram_ctrl_0_Mem0": {
                 "address_block": "/axi_bram_ctrl_0/S_AXI/Mem0",
-                "offset": "0x00000000C0000000",
+                "offset": "0x0000000044A02000",
                 "range": "8K"
               },
               "SEG_axi_csr_0_CONTROL_STATUS_REG_reg": {
                 "address_block": "/axi_csr_0/CONTROL_STATUS_REG/CONTROL_STATUS_REG_reg",
                 "offset": "0x0000000044A00000",
-                "range": "64K",
+                "range": "128",
                 "offset_base_param": "C_CONTROL_STATUS_REG_BASEADDR",
                 "offset_high_param": "C_CONTROL_STATUS_REG_HIGHADDR"
               }
