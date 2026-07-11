@@ -42,7 +42,18 @@ ARCHITECTURE Behavioral OF top_level IS
             ledn : OUT STD_LOGIC_VECTOR (3 DOWNTO 0);
             enable_acquisition : OUT STD_LOGIC;
             is_running : IN STD_LOGIC;
-            buffer_full : IN STD_LOGIC
+            buffer_full : IN STD_LOGIC;
+
+            rsta_busy_0 : OUT STD_LOGIC;
+            rstb_busy_0 : OUT STD_LOGIC;
+            BRAM_PORTB_0_addr : IN STD_LOGIC_VECTOR (31 DOWNTO 0);
+            BRAM_PORTB_0_clk : IN STD_LOGIC;
+            BRAM_PORTB_0_din : IN STD_LOGIC_VECTOR (31 DOWNTO 0);
+            BRAM_PORTB_0_dout : OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
+            BRAM_PORTB_0_en : IN STD_LOGIC;
+            BRAM_PORTB_0_rst : IN STD_LOGIC;
+            BRAM_PORTB_0_we : IN STD_LOGIC_VECTOR (3 DOWNTO 0)
+
         );
     END COMPONENT design_1_wrapper;
 
@@ -78,19 +89,6 @@ ARCHITECTURE Behavioral OF top_level IS
             sysclk : IN STD_LOGIC
         );
     END COMPONENT tick_gen;
-
---    COMPONENT blk_mem_gen_0 IS
---        PORT (
---            clkb : IN STD_LOGIC;
---            rstb : IN STD_LOGIC;
---            web : IN STD_LOGIC;
---            -- enb : in STD_LOGIC; --Optional, wenn nicht benötigt, kann entfernt werden oder auf '1' gesetzt werden
---            addrb : IN STD_LOGIC_VECTOR (12 DOWNTO 0);
---            dinb : IN STD_LOGIC_VECTOR (31 DOWNTO 0);
---            doutb : OUT STD_LOGIC_VECTOR (31 DOWNTO 0)
---        );
---    END COMPONENT blk_mem_gen_0;
-
     SIGNAL sys_clk : STD_LOGIC;
     SIGNAL tick_1Hz : STD_LOGIC;
     SIGNAL count : STD_LOGIC_VECTOR(3 DOWNTO 0) := (OTHERS => '0'); -- 4-bit counter
@@ -105,8 +103,10 @@ ARCHITECTURE Behavioral OF top_level IS
     ATTRIBUTE Async_Reg OF enable_acquisition_synced : SIGNAL IS "TRUE";
 
     SIGNAL bram_addr_counter : STD_LOGIC_VECTOR (12 DOWNTO 0) := (OTHERS => '0'); -- 13-bit counter for BRAM address 
+    SIGNAL BRAM_PORTB_0_addr_sig : STD_LOGIC_VECTOR (31 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL BRAM_PORTB_0_we_sig : STD_LOGIC_VECTOR (3 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL BRAM_PORTB_0_rst_sig : STD_LOGIC;
     SIGNAL sawtooth_out : STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => '0'); -- 32-bit sawtooth output
-    SIGNAL sawtooth_valid : STD_LOGIC := '0'; -- Signal to indicate when the sawtooth output is valid   
     SIGNAL sample_valid : STD_LOGIC; -- Signal to indicate when the sample is valid
 
 BEGIN
@@ -141,17 +141,6 @@ BEGIN
         sample_valid => sample_valid
     );
 
-    bram_inst : blk_mem_gen_0
-    PORT MAP(
-        clkb => sys_clk,
-        rstb => NOT pcie_reset,
-        web => sample_valid,
-        -- enb => '1', -- optional 
-        addrb => bram_addr_counter,
-        dinb => sawtooth_out,
-        doutb => OPEN
-    );
-
     --ToDo: Siehe PCIe Takt-Anforderung auf Low setzen, sollte nicht immer aktiv sein,
     -- nur bei bedarf, windows treiber können das auch steuern, 
     --aber für die Demo ist es in Ordnung:
@@ -171,10 +160,25 @@ BEGIN
 
         --Added by me:
 
+        --GPIOs:
         ledn => OPEN, --ledn,
+
+        --CSR Control status Register:
         enable_acquisition => enable_acquisition_sig,
         is_running => is_running_sig,
-        buffer_full => buffer_full_sig
+        buffer_full => buffer_full_sig,
+
+        --Bram Port B:
+        rsta_busy_0 => OPEN,
+        rstb_busy_0 => OPEN,
+        BRAM_PORTB_0_addr => BRAM_PORTB_0_addr_sig,
+        BRAM_PORTB_0_clk => sys_clk,
+        BRAM_PORTB_0_din => sawtooth_out,
+        BRAM_PORTB_0_dout => OPEN,
+        BRAM_PORTB_0_en => '1', -- optional
+        BRAM_PORTB_0_rst => BRAM_PORTB_0_rst_sig,
+        BRAM_PORTB_0_we => BRAM_PORTB_0_we_sig
+
     );
 
     PROCESS (sys_clk, pcie_reset)
@@ -184,7 +188,7 @@ BEGIN
             is_running_sig <= '0';
             ff1_reg <= '0';
             enable_acquisition_synced <= '0';
-
+            bram_addr_counter <= (OTHERS => '0');
         ELSIF rising_edge(sys_clk) THEN
             FF1_reg <= enable_acquisition_sig;
             enable_acquisition_synced <= FF1_reg;
@@ -196,12 +200,14 @@ BEGIN
             END IF;
         END IF;
     END PROCESS;
+    BRAM_PORTB_0_addr_sig <= (18 DOWNTO 0 => '0') & bram_addr_counter;
+    BRAM_PORTB_0_we_sig <= (3 DOWNTO 0 => sample_valid);
+    BRAM_PORTB_0_rst_sig <= NOT pcie_reset;
 
     PROCESS (sys_clk, pcie_reset)
     BEGIN
         IF pcie_reset = '0' THEN
             count <= (OTHERS => '0'); -- Reset: Alle LEDs an
-
         ELSIF rising_edge(sys_clk) THEN
             IF tick_1Hz = '1' AND enable_acquisition_synced = '1' THEN
                 count <= STD_LOGIC_VECTOR(unsigned(count) + 1);
