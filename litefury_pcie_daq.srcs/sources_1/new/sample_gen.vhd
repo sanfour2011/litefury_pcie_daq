@@ -38,13 +38,14 @@ ENTITY sample_gen IS
     PORT (
         rst_n : IN STD_LOGIC;
         clk : IN STD_LOGIC;
+        enable : IN STD_LOGIC;
         sawtooth_out : OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
         sample_valid : OUT STD_LOGIC
     );
 END sample_gen;
 
 ARCHITECTURE Behavioral OF sample_gen IS
-    SIGNAL count : unsigned (27 DOWNTO 0) := (OTHERS => '0'); 
+    SIGNAL count : unsigned (27 DOWNTO 0) := (OTHERS => '0');
     SIGNAL sawtooth_value : unsigned (31 DOWNTO 0) := (OTHERS => '0'); -- 32-bit sawtooth value
 
 BEGIN
@@ -56,13 +57,15 @@ BEGIN
             sawtooth_value <= (OTHERS => '0');
             sample_valid <= '0';
         ELSIF rising_edge(clk) THEN
-            IF count = (CLK_FREQ_HZ / SAMPLE_RATE_HZ - 1) THEN
-                count <= (OTHERS => '0');
-                sawtooth_value <= sawtooth_value + 1; -- Increment sawtooth value and wrap around at 2^32
-                sample_valid <= '1'; -- Set sample_valid high for one clock cycle
-            ELSE
-                sample_valid <= '0'; -- Set sample_valid low
-                count <= count + 1;
+            IF enable = '1' THEN
+                IF count = (CLK_FREQ_HZ / SAMPLE_RATE_HZ - 1) THEN
+                    count <= (OTHERS => '0');
+                    sawtooth_value <= sawtooth_value + 1; -- Increment sawtooth value and wrap around at 2^32
+                    sample_valid <= '1'; -- Set sample_valid high for one clock cycle
+                ELSE
+                    sample_valid <= '0'; -- Set sample_valid low
+                    count <= count + 1;
+                END IF;
             END IF;
         END IF;
     END PROCESS;

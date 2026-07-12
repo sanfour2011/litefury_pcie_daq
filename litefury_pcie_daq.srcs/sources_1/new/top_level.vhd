@@ -65,19 +65,6 @@ ARCHITECTURE Behavioral OF top_level IS
         ); -- 1-bit input: Diff_n buffer input (connect directly to top-level port)
     END COMPONENT IBUFDS;
 
-    COMPONENT sample_gen IS
-        GENERIC (
-            SAMPLE_RATE_HZ : INTEGER := 1; -- Rate at which new sawtooth samples are generated
-            CLK_FREQ_HZ : INTEGER := 200_000_000 -- Input CLK_FREQ_HZ
-        );
-        PORT (
-            rst_n : IN STD_LOGIC;
-            clk : IN STD_LOGIC;
-            sawtooth_out : OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
-            sample_valid : OUT STD_LOGIC
-        );
-    END COMPONENT sample_gen;
-
     COMPONENT tick_gen IS
         GENERIC (
             TICK_RATE_HZ : INTEGER := 1; -- Tick rate in Hz
@@ -89,6 +76,25 @@ ARCHITECTURE Behavioral OF top_level IS
             sysclk : IN STD_LOGIC
         );
     END COMPONENT tick_gen;
+
+    COMPONENT acquisition_ctrl IS
+        GENERIC (
+            buffer_size : INTEGER := 1024; -- Size of the buffer in samples
+            sample_rate_hz : INTEGER := 100_000_000; -- Rate at which new sawtooth samples are generated
+            clk_freq_hz : INTEGER := 200_000_000 -- Input CLK_FREQ_HZ
+        );
+        PORT (
+            clk : IN STD_LOGIC;
+            rst_n : IN STD_LOGIC;
+            acq_en : IN STD_LOGIC;
+            is_running : OUT STD_LOGIC;
+            buffer_full : OUT STD_LOGIC;
+            sample_ready : OUT STD_LOGIC;
+            sample_out : OUT STD_LOGIC_VECTOR(31 DOWNTO 0);
+            sample_idx : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
+        );
+    END COMPONENT acquisition_ctrl;
+
     SIGNAL sys_clk : STD_LOGIC;
     SIGNAL tick_1Hz : STD_LOGIC;
     SIGNAL count : STD_LOGIC_VECTOR(3 DOWNTO 0) := (OTHERS => '0'); -- 4-bit counter
@@ -97,17 +103,18 @@ ARCHITECTURE Behavioral OF top_level IS
     SIGNAL buffer_full_sig : STD_LOGIC;
 
     ATTRIBUTE ASYNC_REG : STRING; --könnte man auch im xdc setzen, aber hier ist es einfacher: set_property ASYNC_REG TRUE [get_cells {FF1_reg FF2_reg}]
-    SIGNAL FF1_reg : STD_LOGIC := '0';
-    SIGNAL enable_acquisition_synced : STD_LOGIC := '0'; -- Synchronisiertes Signal für enable_acquisition (Hint CDC)
+    SIGNAL FF1_reg : STD_ULOGIC := '0';
+    SIGNAL enable_acquisition_synced : STD_ULOGIC := '0'; -- Synchronisiertes Signal für enable_acquisition (Hint CDC)
     ATTRIBUTE ASYNC_REG OF FF1_reg : SIGNAL IS "TRUE";
     ATTRIBUTE Async_Reg OF enable_acquisition_synced : SIGNAL IS "TRUE";
 
-    SIGNAL bram_addr_counter : STD_LOGIC_VECTOR (12 DOWNTO 0) := (OTHERS => '0'); -- 13-bit counter for BRAM address 
+    SIGNAL bram_addr_counter_sig : STD_LOGIC_VECTOR (12 DOWNTO 0) := (OTHERS => '0'); -- 13-bit counter for BRAM address 
     SIGNAL BRAM_PORTB_0_addr_sig : STD_LOGIC_VECTOR (31 DOWNTO 0) := (OTHERS => '0');
     SIGNAL BRAM_PORTB_0_we_sig : STD_LOGIC_VECTOR (3 DOWNTO 0) := (OTHERS => '0');
     SIGNAL BRAM_PORTB_0_rst_sig : STD_LOGIC;
-    SIGNAL sawtooth_out : STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => '0'); -- 32-bit sawtooth output
-    SIGNAL sample_valid : STD_LOGIC; -- Signal to indicate when the sample is valid
+    SIGNAL sample_valid_sig : STD_LOGIC; -- Signal to indicate when the sample is valid
+    SIGNAL sawtooth_out_sig : STD_LOGIC_VECTOR (31 DOWNTO 0) := (OTHERS => '0'); -- 32-bit sawtooth output
+    SIGNAL sample_idx_sig : STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => '0'); -- 32-bit sample index
 
 BEGIN
 
@@ -128,19 +135,22 @@ BEGIN
         tick => tick_1Hz,
         sysclk => sys_clk
     );
-
-    sawtooth_gen_inst : sample_gen
+    acquisition_ctrl_inst : acquisition_ctrl
     GENERIC MAP(
-        SAMPLE_RATE_HZ => 1, -- Rate at which new sawtooth samples are generated
-        CLK_FREQ_HZ => 200_000_000 -- Input CLK_FREQ_HZ
+        buffer_size => 1024,
+        sample_rate_hz => 1,
+        clk_freq_hz => 200_000_000
     )
     PORT MAP(
-        rst_n => pcie_reset,
         clk => sys_clk,
-        sawtooth_out => sawtooth_out,
-        sample_valid => sample_valid
+        rst_n => pcie_reset,
+        acq_en => enable_acquisition_synced,
+        is_running => is_running_sig,
+        buffer_full => buffer_full_sig,
+        sample_ready => sample_valid_sig,
+        sample_out => sawtooth_out_sig,
+        sample_idx => sample_idx_sig
     );
-
     --ToDo: Siehe PCIe Takt-Anforderung auf Low setzen, sollte nicht immer aktiv sein,
     -- nur bei bedarf, windows treiber können das auch steuern, 
     --aber für die Demo ist es in Ordnung:
@@ -159,7 +169,6 @@ BEGIN
         pcie_reset => pcie_reset,
 
         --Added by me:
-
         --GPIOs:
         ledn => OPEN, --ledn,
 
@@ -173,7 +182,7 @@ BEGIN
         rstb_busy_0 => OPEN,
         BRAM_PORTB_0_addr => BRAM_PORTB_0_addr_sig,
         BRAM_PORTB_0_clk => sys_clk,
-        BRAM_PORTB_0_din => sawtooth_out,
+        BRAM_PORTB_0_din => sawtooth_out_sig,
         BRAM_PORTB_0_dout => OPEN,
         BRAM_PORTB_0_en => '1', -- optional
         BRAM_PORTB_0_rst => BRAM_PORTB_0_rst_sig,
@@ -185,23 +194,18 @@ BEGIN
     BEGIN
 
         IF pcie_reset = '0' THEN
-            is_running_sig <= '0';
             ff1_reg <= '0';
             enable_acquisition_synced <= '0';
-            bram_addr_counter <= (OTHERS => '0');
+            bram_addr_counter_sig <= (OTHERS => '0');
+
         ELSIF rising_edge(sys_clk) THEN
             FF1_reg <= enable_acquisition_sig;
             enable_acquisition_synced <= FF1_reg;
-            IF enable_acquisition_synced = '1' AND buffer_full_sig = '0' THEN
-                is_running_sig <= '1';
-                bram_addr_counter <= STD_LOGIC_VECTOR(unsigned(bram_addr_counter) + 1);
-            ELSE 
-                is_running_sig <= '0';
-            END IF;
+            bram_addr_counter_sig <= sample_idx_sig(12 DOWNTO 0); -- Use the lower 13 bits of sample_idx_sig for BRAM address, since the BRAM is set to  8192 locations (2^13 = 8192) 
         END IF;
     END PROCESS;
-    BRAM_PORTB_0_addr_sig <= (18 DOWNTO 0 => '0') & bram_addr_counter;
-    BRAM_PORTB_0_we_sig <= (3 DOWNTO 0 => sample_valid);
+    BRAM_PORTB_0_addr_sig <= (18 DOWNTO 0 => '0') & bram_addr_counter_sig;
+    BRAM_PORTB_0_we_sig <= (3 DOWNTO 0 => sample_valid_sig);
     BRAM_PORTB_0_rst_sig <= NOT pcie_reset;
 
     PROCESS (sys_clk, pcie_reset)
@@ -210,8 +214,8 @@ BEGIN
             count <= (OTHERS => '0'); -- Reset: Alle LEDs an
         ELSIF rising_edge(sys_clk) THEN
             IF tick_1Hz = '1' AND enable_acquisition_synced = '1' THEN
-                count <= STD_LOGIC_VECTOR(unsigned(count) + 1);               
-            ELSIF tick_1Hz = '1' THEN              
+                count <= STD_LOGIC_VECTOR(unsigned(count) + 1);
+            ELSIF tick_1Hz = '1' THEN
                 count <= NOT count;
             END IF;
         END IF;

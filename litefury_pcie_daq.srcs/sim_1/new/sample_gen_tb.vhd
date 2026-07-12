@@ -52,6 +52,7 @@ ARCHITECTURE Behavioral OF sample_gen_tb IS
         PORT (
             rst_n : IN STD_LOGIC;
             clk : IN STD_LOGIC;
+            enable : IN STD_LOGIC;
             sawtooth_out : OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
             sample_valid : OUT STD_LOGIC
         );
@@ -66,6 +67,7 @@ BEGIN
     PORT MAP(
         rst_n => rst_n,
         clk => clk,
+        enable => '1', -- Always enable for this test
         sawtooth_out => sawtooth_out,
         sample_valid => sample_valid
     );
