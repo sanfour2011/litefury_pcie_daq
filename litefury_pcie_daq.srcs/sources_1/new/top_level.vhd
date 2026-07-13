@@ -3,6 +3,10 @@ USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY top_level IS
+    CONSTANT BRAM_SIZE : INTEGER 2048 * 4;
+    CONSTANT SAMPLE_RATE_Hz : INTEGER 136;  -- 136 for a BRAM size of 8192 KB it well take aprox. 1 min to fill the entire BRAM
+    CONSTANT CLK_FREQ_Hz : INTEGER 200_000_000;
+
     PORT (
         -- Pins aus deiner top.xdc
         pcie_clkin_clk_n : IN STD_LOGIC_VECTOR(0 TO 0);
@@ -67,8 +71,8 @@ ARCHITECTURE Behavioral OF top_level IS
 
     COMPONENT tick_gen IS
         GENERIC (
-            TICK_RATE_HZ : INTEGER := 1; -- Tick rate in Hz
-            CLK_FREQ_HZ : INTEGER := 200_000_000
+            TICK_RATE_HZ : INTEGER := SAMPLE_RATE_Hz; -- Tick rate in Hz
+            CLK_FREQ_HZ : INTEGER := CLK_FREQ_Hz
         );
         PORT (
             rst_n : IN STD_LOGIC;
@@ -79,9 +83,9 @@ ARCHITECTURE Behavioral OF top_level IS
 
     COMPONENT acquisition_ctrl IS
         GENERIC (
-            buffer_size : INTEGER := 1024; -- Size of the buffer in samples
-            sample_rate_hz : INTEGER := 100_000_000; -- Rate at which new sawtooth samples are generated
-            clk_freq_hz : INTEGER := 200_000_000 -- Input CLK_FREQ_HZ
+            buffer_size : INTEGER := BRAM_SIZE; -- Size of the buffer in samples
+            sample_rate_hz : INTEGER := SAMPLE_RATE_Hz; -- Rate at which new sawtooth samples are generated
+            clk_freq_hz : INTEGER := CLK_FREQ_Hz -- Input CLK_FREQ_HZ
         );
         PORT (
             clk : IN STD_LOGIC;
@@ -127,8 +131,8 @@ BEGIN
 
     tick_gen_inst : tick_gen
     GENERIC MAP(
-        TICK_RATE_HZ => 1, -- 1 Hz
-        CLK_FREQ_HZ => 200_000_000 -- 200 MHz
+        TICK_RATE_HZ => SAMPLE_RATE_Hz, -- 1 Hz
+        CLK_FREQ_HZ => CLK_FREQ_Hz -- 200 MHz
     )
     PORT MAP(
         rst_n => pcie_reset,
@@ -137,9 +141,9 @@ BEGIN
     );
     acquisition_ctrl_inst : acquisition_ctrl
     GENERIC MAP(
-        buffer_size => 1024,
-        sample_rate_hz => 1,
-        clk_freq_hz => 200_000_000
+        buffer_size => BRAM_SIZE,
+        sample_rate_hz => SAMPLE_RATE_Hz,
+        clk_freq_hz => CLK_FREQ_Hz
     )
     PORT MAP(
         clk => sys_clk,
@@ -201,13 +205,14 @@ BEGIN
         ELSIF rising_edge(sys_clk) THEN
             FF1_reg <= enable_acquisition_sig;
             enable_acquisition_synced <= FF1_reg;
-            bram_addr_counter_sig <= sample_idx_sig(12 DOWNTO 0); -- Use the lower 13 bits of sample_idx_sig for BRAM address, since the BRAM is set to  8192 locations (2^13 = 8192) 
+            -- Byte address: 11-bit word index shifted left by 2 (×4) for 4-byte words, giving 13-bit byte address (2^13 = 8192 bytes)
+            bram_addr_counter_sig <= sample_idx_sig(10 DOWNTO 0) & "00";
         END IF;
     END PROCESS;
     BRAM_PORTB_0_addr_sig <= (18 DOWNTO 0 => '0') & bram_addr_counter_sig;
     BRAM_PORTB_0_we_sig <= (3 DOWNTO 0 => sample_valid_sig);
     BRAM_PORTB_0_rst_sig <= NOT pcie_reset;
-    
+
     -- heart beat process for LEDs, shows that every thing is working
     PROCESS (sys_clk, pcie_reset)
     BEGIN
