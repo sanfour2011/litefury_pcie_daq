@@ -111,7 +111,7 @@ ARCHITECTURE Behavioral OF top_level IS
     SIGNAL bram_addr_counter_sig : STD_LOGIC_VECTOR (12 DOWNTO 0) := (OTHERS => '0'); -- 13-bit counter for BRAM address 
     SIGNAL BRAM_PORTB_0_addr_sig : STD_LOGIC_VECTOR (31 DOWNTO 0) := (OTHERS => '0');
     SIGNAL BRAM_PORTB_0_we_sig : STD_LOGIC_VECTOR (3 DOWNTO 0) := (OTHERS => '0');
-    SIGNAL BRAM_PORTB_0_rst_sig : STD_LOGIC;
+    SIGNAL BRAM_PORTB_0_rst_sig : STD_LOGIC; -- unfortnattly we need a reset signal for the BRAM, because its reset
     SIGNAL sample_valid_sig : STD_LOGIC; -- Signal to indicate when the sample is valid
     SIGNAL sawtooth_out_sig : STD_LOGIC_VECTOR (31 DOWNTO 0) := (OTHERS => '0'); -- 32-bit sawtooth output
     SIGNAL sample_idx_sig : STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => '0'); -- 32-bit sample index
@@ -207,7 +207,8 @@ BEGIN
     BRAM_PORTB_0_addr_sig <= (18 DOWNTO 0 => '0') & bram_addr_counter_sig;
     BRAM_PORTB_0_we_sig <= (3 DOWNTO 0 => sample_valid_sig);
     BRAM_PORTB_0_rst_sig <= NOT pcie_reset;
-
+    
+    -- heart beat process for LEDs, shows that every thing is working
     PROCESS (sys_clk, pcie_reset)
     BEGIN
         IF pcie_reset = '0' THEN

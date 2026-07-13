@@ -75,7 +75,7 @@ BEGIN
     PORT MAP(
         rst_n => rst_n,
         clk => clk,
-        enable => acq_en,
+        enable => acq_en and not buffer_full_sig, -- Enable sample generation only when acquisition is enabled and buffer is not full
         sawtooth_out => sample_out,
         sample_valid => sample_valid_sig
     );
@@ -91,8 +91,9 @@ BEGIN
                 IF sample_valid_sig = '1' THEN
                     sample_idx_sig <= STD_LOGIC_VECTOR(unsigned(sample_idx_sig) + 1);
                 END IF;
-                IF unsigned(sample_idx_sig) >= buffer_size THEN
+                IF unsigned(sample_idx_sig) >= buffer_size-1 THEN
                     buffer_full_sig <= '1';
+                    is_running <= '0';
                 ELSE
                     buffer_full_sig <= '0';
                 END IF;
