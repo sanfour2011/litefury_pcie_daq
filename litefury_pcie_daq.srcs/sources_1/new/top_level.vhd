@@ -3,10 +3,6 @@ USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY top_level IS
-    CONSTANT BRAM_SIZE : INTEGER 2048 * 4;
-    CONSTANT SAMPLE_RATE_Hz : INTEGER 136;  -- 136 for a BRAM size of 8192 KB it well take aprox. 1 min to fill the entire BRAM
-    CONSTANT CLK_FREQ_Hz : INTEGER 200_000_000;
-
     PORT (
         -- Pins aus deiner top.xdc
         pcie_clkin_clk_n : IN STD_LOGIC_VECTOR(0 TO 0);
@@ -30,6 +26,9 @@ ENTITY top_level IS
 END top_level;
 
 ARCHITECTURE Behavioral OF top_level IS
+    CONSTANT BRAM_SIZE : INTEGER := 2048; -- number of 32-bit samples (words) that the BRAM is holding and NOT bytes: 2048 words x 4 bytes = 8192 bytes total.
+    CONSTANT SAMPLE_RATE_Hz : INTEGER := 30; -- at 30 samples/s, filling 2048 samples takes ~1 min , convenient for manual hardware tests via RWEverything.
+    CONSTANT CLK_FREQ_Hz : INTEGER := 200_000_000;
 
     -- JETZT EXAKT: Die Komponente angepasst an deine design_1_wrapper.vhd
     COMPONENT design_1_wrapper IS
@@ -110,7 +109,7 @@ ARCHITECTURE Behavioral OF top_level IS
     SIGNAL FF1_reg : STD_ULOGIC := '0';
     SIGNAL enable_acquisition_synced : STD_ULOGIC := '0'; -- Synchronisiertes Signal für enable_acquisition (Hint CDC)
     ATTRIBUTE ASYNC_REG OF FF1_reg : SIGNAL IS "TRUE";
-    ATTRIBUTE Async_Reg OF enable_acquisition_synced : SIGNAL IS "TRUE";
+    ATTRIBUTE ASYNC_REG OF enable_acquisition_synced : SIGNAL IS "TRUE";
 
     SIGNAL bram_addr_counter_sig : STD_LOGIC_VECTOR (12 DOWNTO 0) := (OTHERS => '0'); -- 13-bit counter for BRAM address 
     SIGNAL BRAM_PORTB_0_addr_sig : STD_LOGIC_VECTOR (31 DOWNTO 0) := (OTHERS => '0');
@@ -120,6 +119,12 @@ ARCHITECTURE Behavioral OF top_level IS
     SIGNAL sawtooth_out_sig : STD_LOGIC_VECTOR (31 DOWNTO 0) := (OTHERS => '0'); -- 32-bit sawtooth output
     SIGNAL sample_idx_sig : STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => '0'); -- 32-bit sample index
 
+    -- ATTRIBUTE mark_debug : STRING;
+    -- ATTRIBUTE mark_debug OF BRAM_PORTB_0_addr_sig : SIGNAL IS "TRUE";
+    -- ATTRIBUTE mark_debug OF sawtooth_out_sig : SIGNAL IS "TRUE";
+    -- ATTRIBUTE mark_debug OF sample_valid_sig : SIGNAL IS "TRUE";
+    -- ATTRIBUTE mark_debug OF sample_idx_sig : SIGNAL IS "TRUE";
+    -- ATTRIBUTE mark_debug OF BRAM_PORTB_0_we_sig : SIGNAL IS "TRUE";
 BEGIN
 
     efury_sys_clk : IBUFDS
@@ -131,7 +136,7 @@ BEGIN
 
     tick_gen_inst : tick_gen
     GENERIC MAP(
-        TICK_RATE_HZ => SAMPLE_RATE_Hz, -- 1 Hz
+        TICK_RATE_HZ => 1, -- 1 Hz
         CLK_FREQ_HZ => CLK_FREQ_Hz -- 200 MHz
     )
     PORT MAP(
@@ -191,7 +196,6 @@ BEGIN
         BRAM_PORTB_0_en => '1', -- optional
         BRAM_PORTB_0_rst => BRAM_PORTB_0_rst_sig,
         BRAM_PORTB_0_we => BRAM_PORTB_0_we_sig
-
     );
 
     PROCESS (sys_clk, pcie_reset)
@@ -207,8 +211,10 @@ BEGIN
             enable_acquisition_synced <= FF1_reg;
             -- Byte address: 11-bit word index shifted left by 2 (×4) for 4-byte words, giving 13-bit byte address (2^13 = 8192 bytes)
             bram_addr_counter_sig <= sample_idx_sig(10 DOWNTO 0) & "00";
+
         END IF;
     END PROCESS;
+
     BRAM_PORTB_0_addr_sig <= (18 DOWNTO 0 => '0') & bram_addr_counter_sig;
     BRAM_PORTB_0_we_sig <= (3 DOWNTO 0 => sample_valid_sig);
     BRAM_PORTB_0_rst_sig <= NOT pcie_reset;

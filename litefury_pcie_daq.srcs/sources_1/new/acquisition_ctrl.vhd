@@ -31,7 +31,7 @@ USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY acquisition_ctrl IS
     GENERIC (
-        buffer_size : INTEGER := 1024; -- Size of the buffer in samples
+        buffer_size : INTEGER := 2048; -- Size of the buffer in samples
         sample_rate_hz : INTEGER := 100_000_000; -- Rate at which new sawtooth samples are generated
         clk_freq_hz : INTEGER := 200_000_000 -- Input CLK_FREQ_HZ
     );
@@ -51,6 +51,7 @@ ARCHITECTURE Behavioral OF acquisition_ctrl IS
     SIGNAL sample_idx_sig : STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => '0');
     SIGNAL buffer_full_sig : STD_LOGIC := '0';
     SIGNAL sample_valid_sig : STD_LOGIC := '0';
+    SIGNAL enable_sig : STD_LOGIC;
     COMPONENT sample_gen
         GENERIC (
             SAMPLE_RATE_HZ : INTEGER := 100_000_000; -- Rate at which new sawtooth samples are generated
@@ -91,7 +92,7 @@ BEGIN
                 IF sample_valid_sig = '1' THEN
                     sample_idx_sig <= STD_LOGIC_VECTOR(unsigned(sample_idx_sig) + 1);
                 END IF;
-                IF unsigned(sample_idx_sig) >= buffer_size-1 THEN
+                IF unsigned(sample_idx_sig) >= buffer_size THEN
                     buffer_full_sig <= '1';
                     is_running <= '0';
                 ELSE
@@ -106,5 +107,6 @@ BEGIN
     sample_ready <= sample_valid_sig;
     buffer_full <= buffer_full_sig;
     sample_idx <= sample_idx_sig;
+    enable_sig <= acq_en AND NOT buffer_full_sig; -- Enable sample generation only when acquisition is enabled and buffer is not full
 
 END Behavioral;
