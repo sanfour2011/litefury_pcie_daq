@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0x8DF967DD1067FAD0",
+      "boundary_crc": "0xD4BC3EF68785562",
       "device": "xc7a100tfgg484-2",
       "gen_directory": "../../../../litefury_pcie_daq.gen/sources_1/bd/design_1",
       "name": "design_1",
@@ -231,6 +231,41 @@
       },
       "rstb_busy_0": {
         "direction": "O"
+      },
+      "usr_irq_req": {
+        "type": "intr",
+        "direction": "I",
+        "left": "0",
+        "right": "0",
+        "parameters": {
+          "PortWidth": {
+            "value": "1"
+          },
+          "SENSITIVITY": {
+            "value": "LEVEL_HIGH",
+            "value_src": "default"
+          }
+        }
+      },
+      "usr_irq_ack": {
+        "direction": "O",
+        "left": "0",
+        "right": "0"
+      },
+      "msi_enable": {
+        "direction": "O"
+      },
+      "msi_vector_width": {
+        "type": "data",
+        "direction": "O",
+        "left": "2",
+        "right": "0",
+        "parameters": {
+          "LAYERED_METADATA": {
+            "value": "undef",
+            "value_src": "default"
+          }
+        }
       }
     },
     "components": {
@@ -280,6 +315,9 @@
           },
           "pf0_device_id": {
             "value": "7021"
+          },
+          "pf0_interrupt_pin": {
+            "value": "NONE"
           },
           "pl_link_cap_max_link_speed": {
             "value": "5.0_GT/s"
@@ -692,6 +730,12 @@
           "xdma_0/sys_rst_n"
         ]
       },
+      "usr_irq_req_1": {
+        "ports": [
+          "usr_irq_req",
+          "xdma_0/usr_irq_req"
+        ]
+      },
       "util_ds_buf_IBUF_OUT": {
         "ports": [
           "util_ds_buf/IBUF_OUT",
@@ -715,6 +759,24 @@
           "axi_bram_ctrl_0/s_axi_aresetn",
           "axi_smc/aresetn",
           "axi_csr_0/control_status_reg_aresetn"
+        ]
+      },
+      "xdma_0_msi_enable": {
+        "ports": [
+          "xdma_0/msi_enable",
+          "msi_enable"
+        ]
+      },
+      "xdma_0_msi_vector_width": {
+        "ports": [
+          "xdma_0/msi_vector_width",
+          "msi_vector_width"
+        ]
+      },
+      "xdma_0_usr_irq_ack": {
+        "ports": [
+          "xdma_0/usr_irq_ack",
+          "usr_irq_ack"
         ]
       }
     },

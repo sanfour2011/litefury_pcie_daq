@@ -1,64 +1,64 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
+-- Company:
+-- Engineer:
+--
 -- Create Date: 14.06.2026 09:13:29
--- Design Name: 
+-- Design Name:
 -- Module Name: tick_gen - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
+-- Project Name:
+-- Target Devices:
+-- Tool Versions:
+-- Description:
+--
+-- Dependencies:
+--
 -- Revision:
 -- Revision 0.01 - File Created
 -- Additional Comments:
--- 
+--
 ----------------------------------------------------------------------------------
-LIBRARY IEEE;
-USE IEEE.STD_LOGIC_1164.ALL;
+library ieee;
+use ieee.STD_LOGIC_1164.all;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
-USE IEEE.NUMERIC_STD.ALL;
+use ieee.NUMERIC_STD.all;
 
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx leaf cells in this code.
 -- LIBRARY UNISIM;
 -- USE UNISIM.VComponents.ALL;
 
-ENTITY tick_gen IS
-    GENERIC (
-        TICK_RATE_HZ : INTEGER := 1; -- Clock frequency in Hz
-        CLK_FREQ_HZ : INTEGER := 200_000_000 -- Clock frequency in Hz
-    );
-    PORT (
+entity tick_gen is
+	generic (
+		TICK_RATE_HZ : integer := 1;           -- Clock frequency in Hz
+		CLK_FREQ_HZ  : integer := 200_000_000  -- Clock frequency in Hz
+	);
+	port (
 
-        rst_n : IN STD_LOGIC;
-        tick : OUT STD_LOGIC;
-        sysclk : IN STD_LOGIC
-    );
-END tick_gen;
+		rst_n  : in  std_logic;
+		tick   : out std_logic;
+		sysclk : in  std_logic
+	);
+end tick_gen;
 
-ARCHITECTURE Behavioral OF tick_gen IS
-    SIGNAL count : UNSIGNED(27 DOWNTO 0) := (OTHERS => '0'); -- 28-bit counter
-BEGIN
-    PROCESS (sysclk, rst_n)
-    BEGIN
-        IF rst_n = '0' THEN
-            count <= (OTHERS => '0');
-            tick <= '0';
-        ELSIF rising_edge(sysclk) THEN
-            IF count = (CLK_FREQ_HZ / TICK_RATE_HZ - 1) THEN
-                tick <= '1';
-                count <= (OTHERS => '0');
-            ELSE
-                tick <= '0';
-                count <= count + 1;
-            END IF;
-        END IF;
-    END PROCESS;
+architecture Behavioral of tick_gen is
+	signal count : unsigned(27 downto 0) := (others => '0'); -- 28-bit counter
+begin
+	u_process_1 : process (sysclk, rst_n)
+	begin
+		if rst_n = '0' then
+			count <= (others => '0');
+			tick <= '0';
+		elsif rising_edge(sysclk) then
+			if count = (CLK_FREQ_HZ / TICK_RATE_HZ - 1) then
+				tick <= '1';
+				count <= (others => '0');
+			else
+				tick <= '0';
+				count <= count + 1;
+			end if;
+		end if;
+	end process u_process_1;
 
-END Behavioral;
+end Behavioral;

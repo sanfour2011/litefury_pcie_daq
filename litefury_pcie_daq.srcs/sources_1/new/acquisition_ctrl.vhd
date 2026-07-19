@@ -1,112 +1,112 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
+-- Company:
+-- Engineer:
+--
 -- Create Date: 11.07.2026 19:55:30
--- Design Name: 
+-- Design Name:
 -- Module Name: acquisition_ctrl - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
+-- Project Name:
+-- Target Devices:
+-- Tool Versions:
+-- Description:
+--
+-- Dependencies:
+--
 -- Revision:
 -- Revision 0.01 - File Created
 -- Additional Comments:
--- 
+--
 ----------------------------------------------------------------------------------
-LIBRARY IEEE;
-USE IEEE.STD_LOGIC_1164.ALL;
+library ieee;
+use ieee.STD_LOGIC_1164.all;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
-USE IEEE.NUMERIC_STD.ALL;
+use ieee.NUMERIC_STD.all;
 
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx leaf cells in this code.
 --library UNISIM;
 --use UNISIM.VComponents.all;
 
-ENTITY acquisition_ctrl IS
-    GENERIC (
-        buffer_size : INTEGER := 2048; -- Size of the buffer in samples
-        sample_rate_hz : INTEGER := 100_000_000; -- Rate at which new sawtooth samples are generated
-        clk_freq_hz : INTEGER := 200_000_000 -- Input CLK_FREQ_HZ
-    );
-    PORT (
-        clk : IN STD_LOGIC;
-        rst_n : IN STD_LOGIC;
-        acq_en : IN STD_LOGIC; -- Acquisition enable signal, to start/stop generating samples
-        is_running : OUT STD_LOGIC;
-        buffer_full : OUT STD_LOGIC;
-        sample_ready : OUT STD_LOGIC; -- Signal indicating that a new sample is ready
-        sample_out : OUT STD_LOGIC_VECTOR(31 DOWNTO 0);
-        sample_idx : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
-    );
-END acquisition_ctrl;
+entity acquisition_ctrl is
+	generic (
+		buffer_size    : integer := 2048;         -- Size of the buffer in samples
+		sample_rate_hz : integer := 100_000_000;  -- Rate at which new sawtooth samples are generated
+		clk_freq_hz    : integer := 200_000_000   -- Input CLK_FREQ_HZ
+	);
+	port (
+		clk          : in  std_logic;
+		rst_n        : in  std_logic;
+		acq_en       : in  std_logic;                      -- Acquisition enable signal, to start/stop generating samples
+		is_running   : out std_logic;
+		buffer_full  : out std_logic;
+		sample_ready : out std_logic;                      -- Signal indicating that a new sample is ready
+		sample_out   : out std_logic_vector(31 downto 0);
+		sample_idx   : out std_logic_vector(31 downto 0)
+	);
+end acquisition_ctrl;
 
-ARCHITECTURE Behavioral OF acquisition_ctrl IS
-    SIGNAL sample_idx_sig : STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => '0');
-    SIGNAL buffer_full_sig : STD_LOGIC := '0';
-    SIGNAL sample_valid_sig : STD_LOGIC := '0';
-    SIGNAL enable_sig : STD_LOGIC;
-    COMPONENT sample_gen
-        GENERIC (
-            SAMPLE_RATE_HZ : INTEGER := 100_000_000; -- Rate at which new sawtooth samples are generated
-            CLK_FREQ_HZ : INTEGER := 200_000_000-- Input CLK_FREQ_HZ
-        );
-        PORT (
-            rst_n : IN STD_LOGIC;
-            clk : IN STD_LOGIC;
-            enable : IN STD_LOGIC;
+architecture Behavioral of acquisition_ctrl is
+	signal sample_idx_sig   : std_logic_vector(31 downto 0) := (others => '0');
+	signal buffer_full_sig  : std_logic := '0';
+	signal sample_valid_sig : std_logic := '0';
+	signal enable_sig       : std_logic;
+	component sample_gen
+	generic (
+		SAMPLE_RATE_HZ : integer := 100_000_000;  -- Rate at which new sawtooth samples are generated
+		CLK_FREQ_HZ    : integer := 200_000_000   -- Input CLK_FREQ_HZ
+	);
+	port (
+		rst_n  : in std_logic;
+		clk    : in std_logic;
+		enable : in std_logic;
 
-            sawtooth_out : OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
-            sample_valid : OUT STD_LOGIC
-        );
-    END COMPONENT;
+		sawtooth_out : out std_logic_vector (31 downto 0);
+		sample_valid : out std_logic
+	);
+end component;
 
-BEGIN
-    sample_gen_inst : sample_gen
-    GENERIC MAP(
-        SAMPLE_RATE_HZ => sample_rate_hz,
-        CLK_FREQ_HZ => clk_freq_hz -- Input CLK_FREQ_HZ
-    )
-    PORT MAP(
-        rst_n => rst_n,
-        clk => clk,
-        enable => acq_en and not buffer_full_sig, -- Enable sample generation only when acquisition is enabled and buffer is not full
-        sawtooth_out => sample_out,
-        sample_valid => sample_valid_sig
-    );
+begin
+sample_gen_inst : sample_gen
+generic map (
+	SAMPLE_RATE_HZ => sample_rate_hz,
+	CLK_FREQ_HZ    => clk_freq_hz      -- Input CLK_FREQ_HZ
+)
+port map (
+	rst_n        => rst_n,
+	clk          => clk,
+	enable       => acq_en and not buffer_full_sig,  -- Enable sample generation only when acquisition is enabled and buffer is not full
+	sawtooth_out => sample_out,
+	sample_valid => sample_valid_sig
+);
 
-    PROCESS (clk, rst_n)
-    BEGIN
-        IF rst_n = '0' THEN
-            is_running <= '0';
-            sample_idx_sig <= (OTHERS => '0');
-        ELSIF rising_edge(clk) THEN
-            IF acq_en = '1' AND buffer_full_sig = '0' THEN
-                is_running <= '1';
-                IF sample_valid_sig = '1' THEN
-                    sample_idx_sig <= STD_LOGIC_VECTOR(unsigned(sample_idx_sig) + 1);
-                END IF;
-                IF unsigned(sample_idx_sig) >= buffer_size THEN
-                    buffer_full_sig <= '1';
-                    is_running <= '0';
-                ELSE
-                    buffer_full_sig <= '0';
-                END IF;
-            ELSE
-                is_running <= '0';
-            END IF;
-        END IF;
-    END PROCESS;
+u_process_1 : process (clk, rst_n)
+begin
+	if rst_n = '0' then
+		is_running <= '0';
+		sample_idx_sig <= (others => '0');
+	elsif rising_edge(clk) then
+		if acq_en = '1' and buffer_full_sig = '0' then
+			is_running <= '1';
+			if sample_valid_sig = '1' then
+				sample_idx_sig <= std_logic_vector(unsigned(sample_idx_sig) + 1);
+			end if;
+			if unsigned(sample_idx_sig) >= buffer_size then
+				buffer_full_sig <= '1';
+				is_running <= '0';
+			else
+				buffer_full_sig <= '0';
+			end if;
+		else
+			is_running <= '0';
+		end if;
+	end if;
+end process u_process_1;
 
-    sample_ready <= sample_valid_sig;
-    buffer_full <= buffer_full_sig;
-    sample_idx <= sample_idx_sig;
-    enable_sig <= acq_en AND NOT buffer_full_sig; -- Enable sample generation only when acquisition is enabled and buffer is not full
+sample_ready <= sample_valid_sig;
+buffer_full <= buffer_full_sig;
+sample_idx <= sample_idx_sig;
+enable_sig <= acq_en and not buffer_full_sig; -- Enable sample generation only when acquisition is enabled and buffer is not full
 
-END Behavioral;
+end Behavioral;

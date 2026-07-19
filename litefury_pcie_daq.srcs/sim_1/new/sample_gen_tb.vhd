@@ -1,117 +1,117 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
+-- Company:
+-- Engineer:
+--
 -- Create Date: 05.07.2026 17:37:44
--- Design Name: 
+-- Design Name:
 -- Module Name: sample_gen_tb - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
+-- Project Name:
+-- Target Devices:
+-- Tool Versions:
+-- Description:
+--
+-- Dependencies:
+--
 -- Revision:
 -- Revision 0.01 - File Created
 -- Additional Comments:
--- 
+--
 ----------------------------------------------------------------------------------
-LIBRARY IEEE;
-USE IEEE.STD_LOGIC_1164.ALL;
+library ieee;
+use ieee.STD_LOGIC_1164.all;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
-USE IEEE.NUMERIC_STD.ALL;
+use ieee.NUMERIC_STD.all;
 
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx leaf cells in this code.
 --library UNISIM;
 --use UNISIM.VComponents.all;
 
-ENTITY sample_gen_tb IS
-    --  Port ( );
-END sample_gen_tb;
+entity sample_gen_tb is
+	--  Port ( );
+end sample_gen_tb;
 
-ARCHITECTURE Behavioral OF sample_gen_tb IS
+architecture Behavioral of sample_gen_tb is
 
-    CONSTANT SAMPLE_RATE_HZ : INTEGER := 100_000_000;
-    CONSTANT CLK_FREQ_HZ : INTEGER := 200_000_000;
-    CONSTANT CLK_PERIOD_NS : TIME := 1_000_000_000 ns / CLK_FREQ_HZ; -- Clock period in nanoseconds
+	constant SAMPLE_RATE_HZ : integer := 100_000_000;
+	constant CLK_FREQ_HZ    : integer := 200_000_000;
+	constant CLK_PERIOD_NS  : time := 1_000_000_000 ns / CLK_FREQ_HZ;  -- Clock period in nanoseconds
 
-    SIGNAL clk_sig : STD_LOGIC := '0';
-    SIGNAL rst_n_sig : STD_LOGIC := '0';
-    SIGNAL sawtooth_out_sig : STD_LOGIC_VECTOR(31 DOWNTO 0);
-    SIGNAL sample_valid_sig : STD_LOGIC;
+	signal clk_sig          : std_logic := '0';
+	signal rst_n_sig        : std_logic := '0';
+	signal sawtooth_out_sig : std_logic_vector(31 downto 0);
+	signal sample_valid_sig : std_logic;
 
-    COMPONENT sample_gen
-        GENERIC (
-            SAMPLE_RATE_HZ : INTEGER := SAMPLE_RATE_HZ; -- Desired output clk frequency
-            CLK_FREQ_HZ : INTEGER := CLK_FREQ_HZ-- Input CLK_FREQ_HZ
-        );
-        PORT (
-            rst_n : IN STD_LOGIC;
-            clk : IN STD_LOGIC;
-            enable : IN STD_LOGIC;
-            sawtooth_out : OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
-            sample_valid : OUT STD_LOGIC
-        );
-    END COMPONENT;
-BEGIN
+	component sample_gen
+	generic (
+		SAMPLE_RATE_HZ : integer := SAMPLE_RATE_HZ;  -- Desired output clk frequency
+		CLK_FREQ_HZ    : integer := CLK_FREQ_HZ      -- Input CLK_FREQ_HZ
+	);
+	port (
+		rst_n        : in  std_logic;
+		clk          : in  std_logic;
+		enable       : in  std_logic;
+		sawtooth_out : out std_logic_vector (31 downto 0);
+		sample_valid : out std_logic
+	);
+end component;
+begin
 
-    UUT : sample_gen
-    GENERIC MAP(
-        SAMPLE_RATE_HZ => SAMPLE_RATE_HZ, -- Desired output clk frequency
-        CLK_FREQ_HZ => CLK_FREQ_HZ -- Input CLK_FREQ_HZ
-    )
-    PORT MAP(
-        rst_n => rst_n_sig,
-        clk => clk_sig,
-        enable => '1', -- Always enable for this test
-        sawtooth_out => sawtooth_out_sig,
-        sample_valid => sample_valid_sig
-    );
+UUT : sample_gen
+generic map (
+	SAMPLE_RATE_HZ => SAMPLE_RATE_HZ,  -- Desired output clk frequency
+	CLK_FREQ_HZ    => CLK_FREQ_HZ      -- Input CLK_FREQ_HZ
+)
+port map (
+	rst_n        => rst_n_sig,
+	clk          => clk_sig,
+	enable       => '1',               -- Always enable for this test
+	sawtooth_out => sawtooth_out_sig,
+	sample_valid => sample_valid_sig
+);
 
-    clk_process : PROCESS
-    BEGIN
-        WHILE true LOOP
-            clk_sig <= '0';
-            WAIT FOR 2.5 ns;
-            clk_sig <= '1';
-            WAIT FOR 2.5 ns;
-        END LOOP;
-    END PROCESS;
+clk_process : process
+begin
+	while true loop
+		clk_sig <= '0';
+		wait for 2.5 ns;
+		clk_sig <= '1';
+		wait for 2.5 ns;
+	end loop;
+	end process clk_process;
 
-    reset_process : PROCESS
-    BEGIN
-        rst_n_sig    <= '0';
-        WAIT FOR 20 ns;
-        rst_n_sig <= '1';
-        WAIT FOR 1 ns; -- Wait for some time to observe the output
-        ASSERT sawtooth_out_sig = x"00000000" REPORT "Sawtooth output is not zero after reset!" SEVERITY error;
-        ASSERT sample_valid_sig = '0' REPORT "Sample valid is not low after reset!" SEVERITY error;
-        WAIT;
-    END PROCESS;
+	reset_process : process
+	begin
+		rst_n_sig <= '0';
+		wait for 20 ns;
+		rst_n_sig <= '1';
+		wait for 1 ns; -- Wait for some time to observe the output
+		assert sawtooth_out_sig = x"00000000" report "Sawtooth output is not zero after reset!" severity error;
+		assert sample_valid_sig = '0' report "Sample valid is not low after reset!" severity error;
+		wait;
+	end process reset_process;
 
-    sawtooth_check : PROCESS
-        VARIABLE expected_value : unsigned(31 DOWNTO 0) := (OTHERS => '0');
-        VARIABLE last_time : TIME := 0 ns;
-        VARIABLE first_sample : BOOLEAN := true;
+	sawtooth_check : process
+	variable expected_value : unsigned(31 downto 0) := (others => '0');
+	variable last_time      : time := 0 ns;
+	variable first_sample   : boolean := true;
 
-    BEGIN
-        WHILE true LOOP
-            WAIT UNTIL rising_edge (clk_sig);
-            IF sample_valid_sig = '1' THEN
-                expected_value := expected_value + 1;
-                ASSERT sawtooth_out_sig = STD_LOGIC_VECTOR(expected_value) REPORT "Sawtooth output does not match expected value!" SEVERITY error;
+	begin
+		while true loop
+			wait until rising_edge (clk_sig);
+			if sample_valid_sig = '1' then
+				expected_value := expected_value + 1;
+				assert sawtooth_out_sig = std_logic_vector(expected_value) report "Sawtooth output does not match expected value!" severity error;
 
-                IF first_sample THEN
-                    first_sample := false;
-                ELSE
-                    ASSERT (now - last_time) = (CLK_FREQ_HZ/SAMPLE_RATE_HZ) * CLK_PERIOD_NS REPORT "Time interval between samples is not as expected!" SEVERITY error;
-                END IF;
-                last_time := now;
-            END IF;
-        END LOOP;
-    END PROCESS;
-END Behavioral;
+				if first_sample then
+					first_sample := false;
+				else
+					assert (now - last_time) = (CLK_FREQ_HZ/SAMPLE_RATE_HZ) * CLK_PERIOD_NS report "Time interval between samples is not as expected!" severity error;
+				end if;
+				last_time := now;
+			end if;
+		end loop;
+		end process sawtooth_check;
+	end Behavioral;
