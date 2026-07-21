@@ -208,6 +208,7 @@ begin
 		assert irq_pending_sig = '1' report "Error buffer_full set to 0, irq_pending_sig should be 1 until W1C!" severity error;
 		wait until rising_edge(clk_sig);
 		buffer_full_sig <= '1';
+		wait for 1 ns;
 		assert irq_pending_sig = '1' report "Toggeling buffer_full_sig 1->0 and then 0->1 should not afffect irq_pending_sig" severity error;
 		wait until rising_edge(clk_sig);
 		--irq_pending_sig <= '0';
@@ -220,7 +221,11 @@ begin
 		assert irq_pending_sig = '0' report "irq_pending should be cleared!" severity error;
 		buffer_full_sig <= '0';
 		wait until rising_edge(clk_sig);
-
+		buffer_full_sig <= '1';
+		wait until rising_edge(clk_sig);
+		wait for 1 ns;
+		assert irq_pending_sig = '1' report "Resetting irq_pending_sig after clearing failed" severity error;
+		
 		wait;
 	end process test_irq_pending_w1c;
 
