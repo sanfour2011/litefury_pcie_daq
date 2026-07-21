@@ -17,3 +17,8 @@
 !*.srcs/constrs_1/**
 !*.srcs/sources_1/new/**
 !*.srcs/sim_1/**
+
+#Ignoriere vscode spezifische Datein
+vhdl-linter.yml
+vhdl_ls.toml
+new.code-workspace

@@ -4,7 +4,7 @@
 # https://www.xilinx.com/support/documents/sw_manuals/xilinx2022_1/ug900-vivado-logic-simulation.pdf
 
 # Suppress Tcl Command Trace (like 'echo off' in Windows batch files)
-#?? couldn't find any thing till now
+#?? couldn't find any thing till now :(
 
 set proj_dir [get_property DIRECTORY [current_project]]
 # in my case the simulation results are in simulate.log
