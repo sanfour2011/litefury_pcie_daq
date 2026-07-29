@@ -1,18 +1,15 @@
 #include <stdlib.h>
 #include <ncurses.h>
 #include <stdint.h>
+#include "reg.h"
+#include "bram.h"
 // https://invisible-island.net/ncurses/howto/NCURSES-Programming-HOWTO.html
-
-#define BRAM_WORDS 2048
-#define BRAM_BASE_ADDR 0xFE402000u
 
 int main(void)
 {
-    uint32_t bram_data[BRAM_WORDS];
-    for (int i = 0; i < BRAM_WORDS; i++)
-    {
-        bram_data[i] = 0xA0000000u + (uint32_t)i;
-    }
+    uint32_t ctrl_reg = 0x00000001u;                                   // dummy CTRL raw value
+    uint32_t status_reg = STATUS_BIT_RUNNING | STATUS_BIT_IRQ_PENDING; // dummy STATUS raw value
+
     initscr();
 
     if (has_colors() == FALSE)
@@ -78,86 +75,26 @@ int main(void)
     mvwprintw(left, 8, 0, "q: quit");
     wrefresh(left);
 
-    mvwprintw(pci, 0, 0, "PCI Info (press 'p')");
+    mvwprintw(pci, 0, 0, "01:00.0 Xilinx 7-Series FPGA [10ee:7011]");
+    mvwprintw(pci, 1, 0, "BAR0 0xd0000000 (128K)  BAR2 0xd0020000 (64K)");
     wrefresh(pci);
 
     mvwprintw(bram, 0, 0, "BRAM");
     wrefresh(bram);
 
-    int is_running = 0;  // STATUS bit 0
-    int buffer_full = 0; // STATUS bit 1
-    int irq_pending = 0; // STATUS bit 2
     int tick = 0;
 
     int ch;
+    uint32_t bram_data[BRAM_WORDS];
     while ((ch = getch()) != 'q')
     {
-        if (ch == '1')
-            is_running = 1;
-        if (ch == '2')
-            is_running = 0;
-        if (ch == 'c')
-            irq_pending = 0;
 
         // Bram Section:
-        werase(bram);
-        mvwprintw(bram, 0, 0, "BRAM");
-
-        int bram_max_y, bram_max_x;
-        getmaxyx(bram, bram_max_y, bram_max_x);
-
-        int words_per_line = (bram_max_x) / 10;
-        if (words_per_line < 1)
-            words_per_line = 1;
-
-        int available_lines = bram_max_y - 2; // line 0 = title, line 1 = blank
-        if (available_lines < 1)
-            available_lines = 1;
-
-        int words_to_show = words_per_line * available_lines;
-        if (words_to_show > BRAM_WORDS)
-            words_to_show = BRAM_WORDS;
-
-        for (int i = 0; i < words_to_show; i++)
-        {
-            if (i % words_per_line == 0)
-            {
-                mvwprintw(bram, 2 + i / words_per_line, 0, "0x%08X: ", BRAM_BASE_ADDR + (uint32_t)i * 4);
-            }
-            wprintw(bram, "%08X ", bram_data[i]);
-        }
-        wrefresh(bram);
+        init_bram_data(bram_data);
+        draw_bram_panel(bram, bram_data);
         // end bram section
-        if (is_running)
-        {
-            tick++;
-            if (tick > 60)
-            {
-                irq_pending = 1;
-                buffer_full = 1;
-                tick = 0;
-            }
-        }
 
-        werase(reg);
-        mvwprintw(reg, 0, 0, "CTRL / STATUS");
-        mvwprintw(reg, 1, 0, "is_running   : ");
-        wattron(reg, COLOR_PAIR(is_running ? 1 : 2));
-        wprintw(reg, "%d", is_running);
-        wattroff(reg, COLOR_PAIR(is_running ? 1 : 2));
-
-        mvwprintw(reg, 2, 0, "buffer_full  : %d", buffer_full);
-
-        mvwprintw(reg, 3, 0, "irq_pending  : ");
-        if (irq_pending)
-        {
-            wattron(reg, COLOR_PAIR(2));
-            wprintw(reg, "PENDING");
-            wattroff(reg, COLOR_PAIR(2));
-        }
-        else
-            wprintw(reg, "0");
-        wrefresh(reg);
+        draw_reg_panel(reg, ctrl_reg, status_reg);
 
         napms(50);
     }
