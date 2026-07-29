@@ -1,0 +1,18 @@
+# Compiled binaries
+test-tui
+step1
+step2
+step3
+step4
+*.o
+*.out
+
+# Build directories
+build/
+bin/
+
+# Editor / OS cruft
+*.swp
+*~
+.vscode/
+.DS_Store
