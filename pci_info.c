@@ -1,8 +1,33 @@
 #include "pci_info.h"
+#include <stdio.h>
+#include <string.h>
 
 void draw_pci_panel(WINDOW *win)
 {
-    mvwprintw(win, 0, 0, "01:00.0 Xilinx 7-Series FPGA [10ee:7011]");
-    mvwprintw(win, 1, 0, "BAR0 0xd0000000 (128K)  BAR2 0xd0020000 (64K)");
+    werase(win);
+
+    FILE *fp = popen("lspci -s 01:00.0 -nnv", "r");
+    if (!fp)
+    {
+        mvwprintw(win, 0, 0, "failed to run lspci");
+        wrefresh(win);
+        pclose(fp);
+        return;
+    }
+
+    int max_y, max_x;
+    getmaxyx(win, max_y, max_x);
+    (void)max_x;
+
+    char line[256];
+    int row = 0;
+    while (row < max_y && fgets(line, sizeof(line), fp) != NULL)
+    {
+        line[strcspn(line, "\n")] = '\0'; // Trimm
+        mvwprintw(win, row, 0, "%s", line);
+        row++;
+    }
+
+    pclose(fp);
     wrefresh(win);
 }

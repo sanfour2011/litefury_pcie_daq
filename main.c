@@ -11,11 +11,8 @@
 
 int main(void)
 {
-    uint32_t ctrl_reg = 0x00000001u;                                   // dummy CTRL raw value
-    uint32_t status_reg = STATUS_BIT_RUNNING | STATUS_BIT_IRQ_PENDING; // dummy STATUS raw value
-
+  
     initscr();
-
     if (has_colors() == FALSE)
     {
         endwin();
@@ -82,7 +79,7 @@ int main(void)
     mvwprintw(left, 6, 0, "s: rescan pci");
     mvwprintw(left, 7, 0, "i: pci info");
     mvwprintw(left, 8, 0, "p: Prepare to flash FPGA");
-    mvwprintw(left, 8, 0, "q: quit");
+    mvwprintw(left, 9, 0, "q: quit");
     wrefresh(left);
 
     int ch;
@@ -94,13 +91,10 @@ int main(void)
     pthread_detach(irq_thread); // We dont need to wait for it runs, it never returns!
     while ((ch = getch()) != 'q')
     {
-uint32_t ctrl_reg = csr_control_read();    
-uint32_t status_reg = csr_status_read();   
+        uint32_t ctrl_reg = csr_control_read();
+        uint32_t status_reg = csr_status_read();
         if (ch == '1')
-        {
-            ctrl_reg |= 0x1u;
-            status_reg |= STATUS_BIT_RUNNING;
-        }
+            csr_control_set_running(1);
         if (ch == '2')
         {
             ctrl_reg &= ~0x1u;
