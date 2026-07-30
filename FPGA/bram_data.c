@@ -1,4 +1,5 @@
 #include "bram_data.h"
+#include "pcie_device.h"
 
 void get_bram_data(uint32_t *bram_data)
 {

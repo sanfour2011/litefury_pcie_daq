@@ -1,5 +1,6 @@
 #include "irq.h"
 #include <unistd.h>
+#include "pcie_device.h"
 
 volatile int irq_thread_ticks = 0;
 

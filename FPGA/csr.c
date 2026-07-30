@@ -1,4 +1,5 @@
 #include "csr.h"
+#include "pcie_device.h"
 
 uint32_t csr_control_read(void)
 {

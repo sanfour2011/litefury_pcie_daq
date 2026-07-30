@@ -92,7 +92,7 @@ int main(void)
     pthread_create(&irq_thread, NULL, irq_thread_func, NULL);
     pthread_detach(irq_thread); // We dont need to wait for it runs, it never returns!
 
-    draw_pci_panel(pci);
+    //draw_pci_panel(pci);
     while ((ch = getch()) != 'q')
     {
 
@@ -104,10 +104,10 @@ int main(void)
                 csr_control_en_acq(0);
             if (ch == 'c')
                 csr_status_clear_irq();
-            if (ch == 'i')
-                draw_pci_panel(pci);
+            
         }
-       
+       if (ch == 'i')
+                draw_pci_panel(pci);
         if (ch == 'r')
             run_shell_command("echo 1 | sudo tee /sys/bus/pci/devices/0000:01:00.0/reset");
         if (ch == 'l')
@@ -115,12 +115,12 @@ int main(void)
         if (ch == 'u')
             run_shell_command("sudo rmmod xdma");
         if (ch == 's')
-            run_shell_command("echo 1 | sudo tee /sys/bus/pci/rescan && lspci -s 0000:01:00.0");
+            FPGA_LOADED = pci_rescan_and_check();
 
         if (ch == 'p' && FPGA_LOADED)
         {
             run_shell_command("sudo rmmod xdma");
-            run_shell_command("echo 1 | sudo tee /sys/bus/pci/devices/0000:01:00.0/reset");
+            run_shell_command("echo 1 | sudo tee /sys/bus/pci/devices/0000:01:00.0/remove");
             FPGA_LOADED = FALSE;
         }
 
