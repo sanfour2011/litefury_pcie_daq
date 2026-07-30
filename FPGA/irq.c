@@ -3,21 +3,23 @@
 #include <unistd.h>
 #include "pcie_device.h"
 
-volatile int irq_thread_ticks = 0;
+volatile int event_count = 0;
 
-void *irq_thread_func(void *arg){
+// Never ever call this function in a loop
+// no close() here on purpose, this thread never exits (infinite loop),
+// fd stays open till the whole program dies anyway, OS cleans it up then,
+// close(fd) would be necessary if are opneing sveral times in a loop.
+// https://www.man7.org/linux/man-pages/man2/pread.2.html
+void *irq_thread_func(void *arg)
+{
     (void)arg;
-int fd = open(CSR_RESOURCE_FILE, O_RDONLY | O_SYNC);
+
+    int fd = open(USR_IRQ_EVENT_FILE, O_RDONLY | O_SYNC);
     if (fd < 0)
         return;
-     
-    close(fd);
-}
-    for(;;)
+    for (;;)
     {
-            ssize_t num_read_bytes = pread(fd, bram_data, BRAM_WORDS * sizeof(uint32_t), BRAM_OFFSET);
-
-        irq_thread_ticks++;
+        ssize_t n = read(fd, &event_count, sizeof(event_count));
     }
     return NULL;
 }
