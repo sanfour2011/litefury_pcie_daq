@@ -1,4 +1,4 @@
-#include "bram.h"
+#include "bram_panel.h"
 
 void init_bram_data(uint32_t *bram_data)
 {

@@ -7,6 +7,7 @@
 #include "ui/pci_info.h"
 #include "FPGA/irq.h"
 #include "FPGA/csr.h"
+#include "shell_exec.h"
 
 // https://invisible-island.net/ncurses/howto/NCURSES-Programming-HOWTO.html
 
@@ -86,34 +87,45 @@ int main(void)
     int ch;
     uint32_t bram_data[BRAM_WORDS];
     init_bram_data(bram_data);
-    bool FPGA_UNLOADED = true;
+    bool FPGA_LOADED = true;
     pthread_t irq_thread;
     pthread_create(&irq_thread, NULL, irq_thread_func, NULL);
     pthread_detach(irq_thread); // We dont need to wait for it runs, it never returns!
+
+    draw_pci_panel(pci);
     while ((ch = getch()) != 'q')
     {
-        uint32_t ctrl_reg = csr_control_read();
-        uint32_t status_reg = csr_status_read();
-        if (FPGA_UNLOADED)
+
+        if (FPGA_LOADED)
         {
             if (ch == '1')
-                csr_control_set_running(1);
+                csr_control_en_acq(1);
             if (ch == '2')
-            {
-                ctrl_reg &= ~0x1u;
-                status_reg &= ~STATUS_BIT_RUNNING;
-            }
+                csr_control_en_acq(0);
             if (ch == 'c')
-                status_reg &= ~STATUS_BIT_IRQ_PENDING;
+                csr_status_clear_irq();
+            if (ch == 'i')
+                draw_pci_panel(pci);
         }
-        if (ch == 'p')
+       
+        if (ch == 'r')
+            run_shell_command("echo 1 | sudo tee /sys/bus/pci/devices/0000:01:00.0/reset");
+        if (ch == 'l')
+            run_shell_command("sudo insmod xdma.ko && lsmod | grep xdma");
+        if (ch == 'u')
+            run_shell_command("sudo rmmod xdma");
+        if (ch == 's')
+            run_shell_command("echo 1 | sudo tee /sys/bus/pci/rescan && lspci -s 0000:01:00.0");
+
+        if (ch == 'p' && FPGA_LOADED)
         {
-            // unload xdma driver
-            // echo 1 | sudo tee /sys/bus/pci/devices/0000:01:00.0/remove
-            //  FPGA_UNLOADED = TRUE
+            run_shell_command("sudo rmmod xdma");
+            run_shell_command("echo 1 | sudo tee /sys/bus/pci/devices/0000:01:00.0/reset");
+            FPGA_LOADED = FALSE;
         }
 
-        draw_pci_panel(pci);
+        uint32_t ctrl_reg = csr_control_read();
+        uint32_t status_reg = csr_status_read();
         draw_bram_panel(bram, bram_data);
         draw_reg_panel(reg, ctrl_reg, status_reg);
 

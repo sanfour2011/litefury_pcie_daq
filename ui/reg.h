@@ -3,7 +3,7 @@
 
 #include <ncurses.h>
 #include <stdint.h>
-#include "csr.h"
+#include "../FPGA/csr.h"
 
 
 
