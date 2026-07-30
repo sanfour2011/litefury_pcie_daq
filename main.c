@@ -2,16 +2,17 @@
 #include <ncurses.h>
 #include <stdint.h>
 #include <pthread.h>
-#include "reg.h"
-#include "bram.h"
-#include "pci_info.h"
-#include "irq.h"
+#include "ui/reg.h"
+#include "ui/bram_panel.h"
+#include "ui/pci_info.h"
+#include "FPGA/irq.h"
+#include "FPGA/csr.h"
 
 // https://invisible-island.net/ncurses/howto/NCURSES-Programming-HOWTO.html
 
 int main(void)
 {
-  
+
     initscr();
     if (has_colors() == FALSE)
     {
@@ -85,7 +86,7 @@ int main(void)
     int ch;
     uint32_t bram_data[BRAM_WORDS];
     init_bram_data(bram_data);
-
+    bool FPGA_UNLOADED = true;
     pthread_t irq_thread;
     pthread_create(&irq_thread, NULL, irq_thread_func, NULL);
     pthread_detach(irq_thread); // We dont need to wait for it runs, it never returns!
@@ -93,15 +94,24 @@ int main(void)
     {
         uint32_t ctrl_reg = csr_control_read();
         uint32_t status_reg = csr_status_read();
-        if (ch == '1')
-            csr_control_set_running(1);
-        if (ch == '2')
+        if (FPGA_UNLOADED)
         {
-            ctrl_reg &= ~0x1u;
-            status_reg &= ~STATUS_BIT_RUNNING;
+            if (ch == '1')
+                csr_control_set_running(1);
+            if (ch == '2')
+            {
+                ctrl_reg &= ~0x1u;
+                status_reg &= ~STATUS_BIT_RUNNING;
+            }
+            if (ch == 'c')
+                status_reg &= ~STATUS_BIT_IRQ_PENDING;
         }
-        if (ch == 'c')
-            status_reg &= ~STATUS_BIT_IRQ_PENDING;
+        if (ch == 'p')
+        {
+            // unload xdma driver
+            // echo 1 | sudo tee /sys/bus/pci/devices/0000:01:00.0/remove
+            //  FPGA_UNLOADED = TRUE
+        }
 
         draw_pci_panel(pci);
         draw_bram_panel(bram, bram_data);
