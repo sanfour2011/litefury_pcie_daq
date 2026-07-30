@@ -3,10 +3,6 @@
 
 #include <stdint.h>
 
-#define STATUS_BIT_RUNNING (1u << 0)
-#define STATUS_BIT_BUFFER_FULL (1u << 1)
-#define STATUS_BIT_IRQ_PENDING (1u << 2)
-
 // Reads the current STATUS register value.
 // /sys/bus/pci/devices/0000:01:00.0/resource2 offset 0x4.
 uint32_t csr_status_read(void);

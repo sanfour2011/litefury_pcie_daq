@@ -52,7 +52,7 @@ int main(void)
     int right_x = left_width + 1;
     int right_width = COLS - right_x - 1;
 
-    int pci_height = 3;
+    int pci_height = 1;
     int reg_height = 5;
     int bram_height = content_height - pci_height - reg_height - 2;
 
@@ -72,16 +72,16 @@ int main(void)
     WINDOW *bram = derwin(stdscr, bram_height, right_width, bram_y, right_x);
 
     // Command menu Left side:
-    mvwprintw(left, 0, 0, "1: start acq");
-    mvwprintw(left, 1, 0, "2: stop acq");
-    mvwprintw(left, 2, 0, "c: clear irq (w1c)");
-    mvwprintw(left, 3, 0, "r: reset board");
-    mvwprintw(left, 4, 0, "l: load xdma driver");
-    mvwprintw(left, 5, 0, "u: unload xdma driver");
-    mvwprintw(left, 6, 0, "s: rescan pci");
-    mvwprintw(left, 7, 0, "i: pci info");
-    mvwprintw(left, 8, 0, "p: Prepare to flash FPGA");
-    mvwprintw(left, 9, 0, "q: quit");
+    mvwprintw(left, 0, 0, "1: Start Acq");
+    mvwprintw(left, 1, 0, "2: Stop Acq");
+    mvwprintw(left, 2, 0, "c: Clear IRQ");
+    mvwprintw(left, 3, 0, "r: Reset Board");
+    mvwprintw(left, 4, 0, "l: Load Driver");
+    mvwprintw(left, 5, 0, "u: Unload Driver");
+    mvwprintw(left, 6, 0, "s: Rescan PCI");
+    mvwprintw(left, 7, 0, "i: PCI Info");
+    mvwprintw(left, 8, 0, "p: FPGA 2 Flash");
+    mvwprintw(left, 9, 0, "q: Quit");
     wrefresh(left);
 
     int ch;
@@ -92,7 +92,7 @@ int main(void)
     pthread_create(&irq_thread, NULL, irq_thread_func, NULL);
     pthread_detach(irq_thread); // We dont need to wait for it runs, it never returns!
 
-    //draw_pci_panel(pci);
+    // draw_pci_panel(pci);
     while ((ch = getch()) != 'q')
     {
 
@@ -104,10 +104,9 @@ int main(void)
                 csr_control_en_acq(0);
             if (ch == 'c')
                 csr_status_clear_irq();
-            
         }
-       if (ch == 'i')
-                draw_pci_panel(pci);
+        if (ch == 'i')
+            draw_pci_panel(pci);
         if (ch == 'r')
             run_shell_command("echo 1 | sudo tee /sys/bus/pci/devices/0000:01:00.0/reset");
         if (ch == 'l')

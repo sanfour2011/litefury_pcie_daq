@@ -15,18 +15,12 @@ void draw_pci_panel(WINDOW *win)
         wrefresh(win);
         return;
     }
-
-    int max_y, max_x;
-    getmaxyx(win, max_y, max_x);
-    (void)max_x;
-
+   
     char line[256];
-    int row = 0;
-    while (row < max_y && fgets(line, sizeof(line), fp) != NULL)
+    if (fgets(line, sizeof(line), fp) != NULL)
     {
-        line[strcspn(line, "\n")] = '\0'; // Trimm
-        mvwprintw(win, row, 0, "%s", line);
-        row++;
+        line[strcspn(line, "\n")] = '\0';
+        mvwprintw(win, 0, 0, "%s", line);
     }
 
     pclose(fp);
@@ -36,14 +30,14 @@ void draw_pci_panel(WINDOW *win)
 bool pci_rescan_and_check()
 {
     run_shell_command("echo 1 | sudo tee /sys/bus/pci/rescan > /dev/null");
- 
+
     FILE *fp = popen("lspci -s 0000:01:00.0 -nnv", "r");
     if (!fp)
         return false;
- 
+
     char buf[512] = {0};
     fread(buf, 1, sizeof(buf) - 1, fp);
     pclose(fp);
- 
+
     return strstr(buf, "01:00.0") != NULL && strstr(buf, "7-Series FPGA Hard PCIe") != NULL;
 }
