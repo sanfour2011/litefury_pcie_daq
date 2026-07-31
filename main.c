@@ -7,6 +7,7 @@
 #include "ui/pci_info.h"
 #include "FPGA/irq.h"
 #include "FPGA/csr.h"
+#include "FPGA/bram_data.h"
 #include "shell_exec.h"
 
 // https://invisible-island.net/ncurses/howto/NCURSES-Programming-HOWTO.html
@@ -86,15 +87,22 @@ int main(void)
 
     int ch;
     uint32_t bram_data[BRAM_WORDS];
-    init_bram_data(bram_data);
+
     bool FPGA_LOADED = true;
     pthread_t irq_thread;
     pthread_create(&irq_thread, NULL, irq_thread_func, NULL);
     pthread_detach(irq_thread); // We dont need to wait for it runs, it never returns!
 
-    // draw_pci_panel(pci);
+    int scroll_offset = 0;
+    draw_pci_panel(pci);
+    keypad(stdscr, TRUE);
     while ((ch = getch()) != 'q')
     {
+
+        if (ch == KEY_UP)
+            scroll_offset++;
+        if (ch == KEY_DOWN)
+            scroll_offset= scroll_offset > 0? scroll_offset--:0;
 
         if (FPGA_LOADED)
         {
@@ -110,7 +118,7 @@ int main(void)
         if (ch == 'r')
             run_shell_command("echo 1 | sudo tee /sys/bus/pci/devices/0000:01:00.0/reset");
         if (ch == 'l')
-            run_shell_command("sudo insmod xdma.ko && lsmod | grep xdma");
+            run_shell_command("sudo pwd && insmod ./xdma.ko && lsmod | grep xdma");
         if (ch == 'u')
             run_shell_command("sudo rmmod xdma");
         if (ch == 's')
@@ -125,10 +133,12 @@ int main(void)
 
         uint32_t ctrl_reg = csr_control_read();
         uint32_t status_reg = csr_status_read();
-        draw_bram_panel(bram, bram_data);
+        dump_bram_data(bram_data);
+
+        draw_bram_panel(bram, bram_data,scroll_offset);
         draw_reg_panel(reg, ctrl_reg, status_reg);
 
-        mvwprintw(reg, 4, 0, "irq heartbeat: %d", irq_thread_ticks);
+        mvwprintw(reg, 4, 0, "irq heartbeat: %d", event_count);
         wrefresh(reg);
         napms(50);
     }

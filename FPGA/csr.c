@@ -16,74 +16,73 @@
 
 uint32_t csr_control_read(void)
 {
-    uint32_t reg_val = -1;
+    // SR_OFFSET is already page-aligned (0x0), so no alignment math needed here
+
     int fd = open(CSR_RESOURCE_FILE, O_RDONLY | O_SYNC);
     if (fd < 0)
-        return -2;
-    pread(fd, &reg_val, sizeof(reg_val), CR_OFFSET);
+        return 0xFFFFFFFF;
+
+    // read 8 bytes Status reg sits on second word
+    volatile uint32_t *map = mmap(NULL, 8, PROT_READ, MAP_SHARED, fd, 0);
+
     close(fd);
-    return reg_val;
+
+    if (map == MAP_FAILED)
+        return 0xFFFFFFFF;
+
+    uint32_t status_reg = map[0];
+    munmap((void *)map, 8);
+    return status_reg;
 }
 
 uint32_t csr_status_read(void)
 {
-    // https: // github.com/Prandr/XDMA_Tutorial/blob/main/mm_axi_bypass_test.c
+    // SR_OFFSET is already page-aligned (0x0), so no alignment math needed here
 
-    uint32_t reg_val = -1;
     int fd = open(CSR_RESOURCE_FILE, O_RDONLY | O_SYNC);
     if (fd < 0)
-        return -2;
-    pread(fd, &reg_val, sizeof(reg_val), SR_OFFSET);
+        return 0xFFFFFFFF;
+
+    // read 8 bytes Status reg sits on second word
+    volatile uint32_t *map = mmap(NULL, 8, PROT_READ, MAP_SHARED, fd, 0);
+
     close(fd);
-    return reg_val;
 
-    // off_t target = SR_OFFSET;
-    // off_t pgsz = sysconf(_SC_PAGESIZE);
-    // off_t target_aligned = target & (~(pgsz - 1));
-    // off_t offset = target & (pgsz - 1);
+    if (map == MAP_FAILED)
+        return 0xFFFFFFFF;
 
-    // char *device = CSR_RESOURCE_FILE;
-
-    // int fd = open(device, O_RDONLY | O_SYNC);
-    // if (fd < 0)
-    //     return -errno;
-
-    // void *map = mmap(NULL, offset + 4, PROT_READ, MAP_SHARED, fd, target_aligned);
-    // if (map == MAP_FAILED)
-    // {
-    //     int err = -errno; // close(fd) changes errno
-    //     close(fd);
-    //     return err;
-    // }
-
-    // char *base_address = (char *)map;
-    // char *target_address = base_address + offset;
-    // volatile uint32_t *ptr = (volatile uint32_t *)target_address;
-    // uint32_t result = *ptr;
-    // munmap(map, offset + 4);
-    // close(fd);
-    // return result;
+    uint32_t status_reg = map[1];
+    munmap((void *)map, 8);
+    return status_reg;
 }
 
 void csr_control_en_acq(int running)
 {
-    int fd = open(CSR_RESOURCE_FILE, O_WRONLY | O_SYNC);
+    int fd = open(CSR_RESOURCE_FILE, O_RDWR | O_SYNC);
     if (fd < 0)
         return;
 
-    uint32_t value = running != 0 ? 1 : 0;
-    pwrite(fd, &value, sizeof(value), CR_OFFSET);
+    volatile uint32_t *map = mmap(NULL, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
     close(fd);
+
+    if (running)
+        map[0] |= (1U << ENABLE_ACQ_BIT);
+    else
+        map[0] &= ~(1U << ENABLE_ACQ_BIT);
+
+    munmap((void *)map, 8);
 }
 
 void csr_status_clear_irq(void)
 {
-    uint32_t value = (1 << STATUS_BIT_IRQ_PENDING);
-
-    int fd = open(CSR_RESOURCE_FILE, O_WRONLY | O_SYNC);
+    int fd = open(CSR_RESOURCE_FILE, O_RDWR | O_SYNC);
     if (fd < 0)
         return;
-    pwrite(fd, &value, sizeof(value), SR_OFFSET);
+
+    volatile uint32_t *map = mmap(NULL, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     close(fd);
+    map[1] |= (1U << STATUS_BIT_IRQ_PENDING);
+
+    munmap((void *)map, 8);
 }

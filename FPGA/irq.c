@@ -16,10 +16,10 @@ void *irq_thread_func(void *arg)
 
     int fd = open(USR_IRQ_EVENT_FILE, O_RDONLY | O_SYNC);
     if (fd < 0)
-        return;
+        return NULL;
     for (;;)
     {
-        ssize_t n = read(fd, &event_count, sizeof(event_count));
+        read(fd, &event_count, sizeof(event_count));
     }
     return NULL;
 }
