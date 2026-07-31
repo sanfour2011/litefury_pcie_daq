@@ -4,5 +4,6 @@
 #include <stdint.h>
 
 void dump_bram_data(uint32_t *bram_data);
+double measure_bram_throughput(int iterations);
 
 #endif

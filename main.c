@@ -8,6 +8,7 @@
 #include "FPGA/irq.h"
 #include "FPGA/csr.h"
 #include "FPGA/bram_data.h"
+#include "FPGA/pcie_device.h"
 #include "shell_exec.h"
 
 // https://invisible-island.net/ncurses/howto/NCURSES-Programming-HOWTO.html
@@ -82,7 +83,8 @@ int main(void)
     mvwprintw(left, 6, 0, "s: Rescan PCI");
     mvwprintw(left, 7, 0, "i: PCI Info");
     mvwprintw(left, 8, 0, "p: FPGA 2 Flash");
-    mvwprintw(left, 9, 0, "q: Quit");
+    mvwprintw(left, 9, 0, "t: Throughput");
+    mvwprintw(left, 10, 0, "q: Quit");
     wrefresh(left);
 
     int ch;
@@ -102,7 +104,7 @@ int main(void)
         if (ch == KEY_UP)
             scroll_offset++;
         if (ch == KEY_DOWN)
-            scroll_offset= scroll_offset > 0? scroll_offset--:0;
+            scroll_offset = scroll_offset > 0 ? (scroll_offset - 1) : 0;
 
         if (FPGA_LOADED)
         {
@@ -112,6 +114,12 @@ int main(void)
                 csr_control_en_acq(0);
             if (ch == 'c')
                 csr_status_clear_irq();
+            if (ch == 't')
+            {
+                int iter = ask_iterations();
+                double speed = measure_bram_throughput(iter);
+                show_throughput_popup(speed, iter);
+            }
         }
         if (ch == 'i')
             draw_pci_panel(pci);
@@ -135,7 +143,7 @@ int main(void)
         uint32_t status_reg = csr_status_read();
         dump_bram_data(bram_data);
 
-        draw_bram_panel(bram, bram_data,scroll_offset);
+        draw_bram_panel(bram, bram_data, scroll_offset);
         draw_reg_panel(reg, ctrl_reg, status_reg);
 
         mvwprintw(reg, 4, 0, "irq heartbeat: %d", event_count);
