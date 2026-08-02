@@ -33,7 +33,8 @@ entity acquisition_ctrl is
 	generic (
 		buffer_size    : integer := 2048;         -- Size of the buffer in samples
 		sample_rate_hz : integer := 100_000_000;  -- Rate at which new sawtooth samples are generated
-		clk_freq_hz    : integer := 200_000_000   -- Input CLK_FREQ_HZ
+		clk_freq_hz    : integer := 200_000_000;  -- Input CLK_FREQ_HZ
+		rst_idx_on_rst : std_logic := '1'
 	);
 	port (
 		clk          : in  std_logic;
@@ -52,6 +53,7 @@ architecture Behavioral of acquisition_ctrl is
 	signal buffer_full_sig  : std_logic := '0';
 	signal sample_valid_sig : std_logic := '0';
 	signal enable_sig       : std_logic;
+
 	component sample_gen
 	generic (
 		SAMPLE_RATE_HZ : integer := 100_000_000;  -- Rate at which new sawtooth samples are generated
@@ -76,7 +78,7 @@ generic map (
 port map (
 	rst_n        => rst_n,
 	clk          => clk,
-	enable       => acq_en and not buffer_full_sig,  -- Enable sample generation only when acquisition is enabled and buffer is not full
+	enable       => enable_sig,       -- Enable sample generation only when acquisition is enabled and buffer is not full
 	sawtooth_out => sample_out,
 	sample_valid => sample_valid_sig
 );
@@ -85,7 +87,10 @@ u_process_1 : process (clk, rst_n)
 begin
 	if rst_n = '0' then
 		is_running <= '0';
-		sample_idx_sig <= (others => '0');
+		buffer_full_sig <= '0';
+		if (rst_idx_on_rst = '1') then
+			sample_idx_sig <= (others => '0');
+		end if;
 	elsif rising_edge(clk) then
 		if acq_en = '1' and buffer_full_sig = '0' then
 			is_running <= '1';
@@ -95,8 +100,6 @@ begin
 			if unsigned(sample_idx_sig) >= buffer_size then
 				buffer_full_sig <= '1';
 				is_running <= '0';
-			else
-				buffer_full_sig <= '0';
 			end if;
 		else
 			is_running <= '0';

@@ -3,8 +3,8 @@
   "ip_inst": {
     "xci_name": "design_1_axi_csr_0_0",
     "cell_name": "axi_csr_0",
-    "component_reference": "Nizar_Homebrew:user:axi_csr:1.0",
-    "ip_revision": "4",
+    "component_reference": "Nizar_Homebrew:user:axi_csr:2.0",
+    "ip_revision": "1",
     "gen_directory": "../../../../../../litefury_pcie_daq.gen/sources_1/bd/design_1/ip/design_1_axi_csr_0_0",
     "parameters": {
       "component_parameters": {
@@ -33,7 +33,7 @@
       },
       "runtime_parameters": {
         "IPCONTEXT": [ { "value": "IP_Integrator" } ],
-        "IPREVISION": [ { "value": "4" } ],
+        "IPREVISION": [ { "value": "1" } ],
         "MANAGED": [ { "value": "TRUE" } ],
         "OUTPUTDIR": [ { "value": "../../../../../../litefury_pcie_daq.gen/sources_1/bd/design_1/ip/design_1_axi_csr_0_0" } ],
         "SELECTEDSIMMODEL": [ { "value": "" } ],
@@ -45,6 +45,7 @@
     "boundary": {
       "ports": {
         "enable_acquisition": [ { "direction": "out" } ],
+        "irq_pending": [ { "direction": "out" } ],
         "is_running": [ { "direction": "in" } ],
         "buffer_full": [ { "direction": "in" } ],
         "control_status_reg_aclk": [ { "direction": "in" } ],
@@ -81,7 +82,7 @@
             "SUPPORTS_NARROW_BURST": [ { "value": "0", "value_src": "constant", "value_permission": "bd", "format": "long", "usage": "all" } ],
             "DATA_WIDTH": [ { "value": "32", "value_src": "auto", "value_permission": "bd", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
             "PROTOCOL": [ { "value": "AXI4LITE", "value_src": "constant", "value_permission": "bd", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
-            "FREQ_HZ": [ { "value": "250000000", "value_src": "user_prop", "value_permission": "bd", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "FREQ_HZ": [ { "value": "250000000", "value_src": "constant", "value_permission": "bd", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
             "ID_WIDTH": [ { "value": "0", "value_src": "constant", "value_permission": "bd", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
             "ADDR_WIDTH": [ { "value": "4", "value_src": "auto", "value_permission": "bd", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
             "AWUSER_WIDTH": [ { "value": "0", "value_src": "constant", "value_permission": "bd", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
@@ -151,7 +152,7 @@
           "parameters": {
             "ASSOCIATED_BUSIF": [ { "value": "CONTROL_STATUS_REG", "value_src": "constant", "value_permission": "bd", "usage": "all" } ],
             "ASSOCIATED_RESET": [ { "value": "control_status_reg_aresetn", "value_src": "constant", "value_permission": "bd", "usage": "all" } ],
-            "FREQ_HZ": [ { "value": "250000000", "value_src": "user_prop", "value_permission": "bd", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
+            "FREQ_HZ": [ { "value": "250000000", "value_src": "constant", "value_permission": "bd", "usage": "all" } ],
             "FREQ_TOLERANCE_HZ": [ { "value": "0", "value_permission": "bd", "resolve_type": "generated", "format": "long", "is_ips_inferred": true, "is_static_object": false } ],
             "PHASE": [ { "value": "0.0", "value_permission": "bd", "resolve_type": "generated", "format": "float", "is_ips_inferred": true, "is_static_object": false } ],
             "CLK_DOMAIN": [ { "value": "design_1_xdma_0_2_axi_aclk", "value_src": "default_prop", "value_permission": "bd", "resolve_type": "generated", "is_ips_inferred": true, "is_static_object": false } ],
@@ -180,5 +181,5 @@
       }
     }
   },
-  "checksum": "11645ccf"
+  "checksum": "18382f6f"
 }

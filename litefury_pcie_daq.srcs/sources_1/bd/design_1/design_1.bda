@@ -226,7 +226,7 @@
                 "SX": "/axi_csr_0",
                 "SI": "CONTROL_STATUS_REG",
                 "SS": "CONTROL_STATUS_REG_reg",
-                "SV": "Nizar_Homebrew:user:axi_csr:1.0",
+                "SV": "Nizar_Homebrew:user:axi_csr:2.0",
                 "TM": "both",
                 "TU": "register"
             },
@@ -244,7 +244,7 @@
                 "SX": "/axi_csr_0",
                 "SI": "CONTROL_STATUS_REG",
                 "SS": "CONTROL_STATUS_REG_reg",
-                "SV": "Nizar_Homebrew:user:axi_csr:1.0",
+                "SV": "Nizar_Homebrew:user:axi_csr:2.0",
                 "TM": "both",
                 "TU": "register"
             },
