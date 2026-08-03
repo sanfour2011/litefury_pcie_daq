@@ -349,8 +349,7 @@ swapped between generator and host, so the generator keeps filling one buffer
 while the host drains the other, plus an overflow counter for when the host
 cannot keep up.
 
-<!-- TODO: link the DAQ 2 repo -->
-
+(https://github.com/sanfour2011/litefury_pcie_daq_2)
 ---
 
 ## Credits
