@@ -348,8 +348,8 @@ follow-up project, **LiteFury PCIe DAQ 2**: a ping-pong buffer, two BRAMs
 swapped between generator and host, so the generator keeps filling one buffer
 while the host drains the other, plus an overflow counter for when the host
 cannot keep up.
-
 (https://github.com/sanfour2011/litefury_pcie_daq_2)
+
 ---
 
 ## Credits
