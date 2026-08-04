@@ -65,7 +65,9 @@ void csr_control_en_acq(int running)
     volatile uint32_t *map = mmap(NULL, 8, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
     close(fd);
-
+    if (map == MAP_FAILED)
+        return;
+        
     if (running)
         map[0] |= (1U << ENABLE_ACQ_BIT);
     else

@@ -23,7 +23,7 @@ Needs `libncurses-dev` and `pthread`.
 ```bash
 sudo apt install libncurses-dev
 make
-./litefury-tui
+sudo ./litefury-tui
 ```
 
 ## Layout
@@ -58,7 +58,8 @@ FPGA/           hardware access - registers, BRAM, IRQ thread (no ncurses depend
 ui/             drawing only - one file per panel, takes a WINDOW* and some data
 ```
 
-The FPGA/ modules are a stand-in right now: register and BRAM values are simulated in software, not yet read from real hardware over mmap. The IRQ side runs on its own pthread, since a real interrupt wait is a blocking read and can't share a thread with the UI loop.
+Register reads/writes and BRAM access go over real hardware now (`mmap()` on
+the CSR resource file, `pread()` on the XDMA DMA channel for BRAM) . The IRQ side runs on its own pthread, since a real interrupt wait is a blocking read and can't share a thread with the UI loop.
 
 ## Requirements
 

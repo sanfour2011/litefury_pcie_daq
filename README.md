@@ -233,12 +233,12 @@ loading/unloading `xdma.ko`):
 sudo ./litefury-tui
 ```
 
-If you already loaded the driver in step 1, the TUI will detect it
-automatically. Alternatively, skip step 1 entirely and press `l` inside the
-TUI to load the driver from there (the compiled `xdma.ko` must be in the same
-folder as `litefury-tui`).
+If CTRL/STATUS show `0xFFFFFFFF`, the driver isn't loaded (or the FPGA
+needs reflashing after a reboot). Fix it with `l` inside the TUI, or run
+`./manual_scripts/load_xdma_driver.sh` first - both just do `insmod
+xdma.ko` (the compiled `xdma.ko` has to sit next to `litefury-tui`.
 
-![TUI before the driver is loaded](host_app/litefury-xdma-monitor/docs/screenshot.png)
+![TUI before the driver is loaded](host_app/docs/screenshot.png)
 
 Once the driver is loaded, the buffer dump becomes visible:
 
