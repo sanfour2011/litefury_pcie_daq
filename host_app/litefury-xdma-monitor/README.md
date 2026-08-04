@@ -4,6 +4,18 @@ Terminal UI for controlling and monitoring a LiteFury (Artix-7) FPGA board over 
 
 ![screenshot](docs/screenshot.png)
 
+## Status
+
+This is <u>**not a polished software**</u>. Who needs error handling when it works, right? Error handling ranges from "minimal" to "optimistic" if something goes sideways, the TUI will probably explain the issue in a way that is far more confusing than the actual problem.
+
+**Why it exists**: rebuilding the same tmux layout by hand after every reboot
+got old fast. This wraps the scripts from [`../manual_scripts/`](../manual_scripts/) into one screen
+so I stop retyping the same six commands. That is the entire feature list.
+
+If you want something robust, use the scripts directly. If you want something
+that saves you five keystrokes and occasionally works, you are in the right
+place.
+
 ## Build
 
 Needs `libncurses-dev` and `pthread`.
@@ -34,6 +46,7 @@ make
 | `s` | Rescan PCI | Triggers a PCI bus rescan and checks whether the device reappears |
 | `i` | PCI Info | Re-runs `lspci` for the board |
 | `p` | FPGA 2 Flash | Unloads the driver and resets the board to prepare it for reflashing |
+| `t` | Throughput | Benchmarks BRAM read throughput (MB/s) via repeated DMA reads (`pread()` on the XDMA `/dev/xdma0_c2h_0` device) |
 | `q` | Quit | Exits the program |
 
 ## Structure
