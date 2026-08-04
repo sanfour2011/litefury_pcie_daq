@@ -9,7 +9,7 @@ Terminal UI for controlling and monitoring a LiteFury (Artix-7) FPGA board over 
 This is <u>**not a polished software**</u>. Who needs error handling when it works, right? Error handling ranges from "minimal" to "optimistic" if something goes sideways, the TUI will probably explain the issue in a way that is far more confusing than the actual problem.
 
 **Why it exists**: rebuilding the same tmux layout by hand after every reboot
-got old fast. This wraps the scripts from [`../manual_scripts/`](../manual_scripts/) into one screen
+got old fast. This wraps the scripts from [`./manual_scripts/`](./manual_scripts/) into one screen
 so I stop retyping the same six commands. That is the entire feature list.
 
 If you want something robust, use the scripts directly. If you want something
