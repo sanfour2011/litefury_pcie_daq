@@ -58,7 +58,6 @@ FPGA/           hardware access - registers, BRAM, IRQ thread (no ncurses depend
 ui/             drawing only - one file per panel, takes a WINDOW* and some data
 ```
 
-The FPGA/ modules are a stand-in right now: register and BRAM values are simulated in software, not yet read from real hardware over mmap. The IRQ side runs on its own pthread, since a real interrupt wait is a blocking read and can't share a thread with the UI loop.
 The FPGA/ modules talk to the real board, over two different paths. Registers go through the AXI bypass BAR: /dev/xdma0_bypass is mmap'd and CONTROL and STATUS (CSR) are read and written in place. That device has no DMA engine attached, so pread()/pwrite() and mmap is the only way in/out. The BRAM dump takes the other route and uses pread() on /dev/xdma0_c2h_0, where the DMA engine moves the data. The IRQ side runs on its own pthread, because waiting for an interrupt is a blocking read() on /dev/xdma0_events_0 and would stall the UI loop if it shared a thread with it.
 
 ## Requirements
