@@ -273,8 +273,6 @@ Base address: BAR-mapped, see the `pciinfo.sh` output.
 | **`0`** | `ENABLE_ACQUISITION` | `RW` | `0b0` | **`1`**: Start acquisition<br>**`0`**: Stop / idle |
 | **`31:1`** | *Reserved* | — | `0x0` | *Reserved for future use* |
 
-<!-- TODO: confirm bit 0 is correct for enable_acquisition, adjust if the real
-     layout differs -->
 
 ### 3. Register Detail: `STATUS` (`0x04`)
 
