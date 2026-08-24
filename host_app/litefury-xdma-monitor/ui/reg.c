@@ -1,5 +1,5 @@
 #include "reg.h"
-
+#include "../FPGA/pcie_device.h"
 
 void draw_reg_panel(WINDOW *win, uint32_t ctrl_reg, uint32_t status_reg){
     
